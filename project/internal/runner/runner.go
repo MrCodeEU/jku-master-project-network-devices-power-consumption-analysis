@@ -22,11 +22,8 @@ type TestConfig struct {
 	TargetIP         string
 	TargetPort       int
 	Protocol         string
-	Workers          int
 	PacketSize       int
-	Interfaces       []string // Network interfaces to use for load generation
-	TargetThroughput float64  // Target throughput in Mbps (0 = unlimited)
-	RampSteps        int      // Number of ramp-up steps (0 = no ramping)
+	InterfaceConfigs []loadgen.InterfaceConfig // Per-interface configuration
 }
 
 // Phase represents the current test phase
@@ -157,10 +154,8 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 				TargetIP:         config.TargetIP,
 				TargetPort:       config.TargetPort,
 				Protocol:         config.Protocol,
-				Workers:          config.Workers,
 				PacketSize:       config.PacketSize,
-				Interfaces:       config.Interfaces,
-				TargetThroughput: config.TargetThroughput,
+				InterfaceConfigs: config.InterfaceConfigs,
 			}
 			err := r.loadGen.Start(loadCtx, loadConfig)
 			if err != nil {
@@ -168,9 +163,11 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 			}
 		}()
 
-		// Handle ramping if configured
-		if config.RampSteps > 0 && config.TargetThroughput > 0 {
-			go r.runRamping(loadCtx, config)
+		// Handle per-interface ramping
+		for _, ic := range config.InterfaceConfigs {
+			if ic.RampSteps > 0 && ic.TargetThroughput > 0 {
+				go r.runInterfaceRamping(loadCtx, config.Duration, ic)
+			}
 		}
 	}
 
@@ -201,24 +198,29 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 	return result, nil
 }
 
-// runRamping gradually increases throughput from 0 to target over the test duration
-func (r *Runner) runRamping(ctx context.Context, config TestConfig) {
-	if config.RampSteps <= 0 || config.TargetThroughput <= 0 {
+// runInterfaceRamping gradually increases throughput for a specific interface
+func (r *Runner) runInterfaceRamping(ctx context.Context, duration time.Duration, ic loadgen.InterfaceConfig) {
+	if ic.RampSteps <= 0 || ic.TargetThroughput <= 0 {
 		return
 	}
 
-	stepDuration := config.Duration / time.Duration(config.RampSteps)
-	stepSize := config.TargetThroughput / float64(config.RampSteps)
+	stepDuration := duration / time.Duration(ic.RampSteps)
+	stepSize := ic.TargetThroughput / float64(ic.RampSteps)
 
-	fmt.Printf("Ramping: %d steps over %s, step size: %.1f Mbps\n", 
-		config.RampSteps, config.Duration, stepSize)
+	ifaceName := ic.Name
+	if ifaceName == "" {
+		ifaceName = "OS-routing"
+	}
+
+	fmt.Printf("Ramping [%s]: %d steps over %s, step size: %.1f Mbps, target: %.1f Mbps\n", 
+		ifaceName, ic.RampSteps, duration, stepSize, ic.TargetThroughput)
 
 	// Start at step 1 (first increment)
-	for step := 1; step <= config.RampSteps; step++ {
+	for step := 1; step <= ic.RampSteps; step++ {
 		currentTarget := stepSize * float64(step)
-		r.loadGen.SetTargetThroughput(currentTarget)
-		fmt.Printf("Ramp step %d/%d: Target throughput = %.1f Mbps\n", 
-			step, config.RampSteps, currentTarget)
+		r.loadGen.SetTargetThroughput(currentTarget) // Updates global target
+		fmt.Printf("Ramp step %d/%d [%s]: Target = %.1f Mbps\n", 
+			step, ic.RampSteps, ifaceName, currentTarget)
 
 		select {
 		case <-ctx.Done():

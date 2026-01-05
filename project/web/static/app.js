@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const interfaceListDiv = document.getElementById('interfaceList');
     const refreshInterfacesBtn = document.getElementById('refreshInterfacesBtn');
 
-    // Fetch and display network interfaces
+    // Fetch and display network interfaces with per-interface config
     async function loadInterfaces() {
         try {
             interfaceListDiv.innerHTML = '<em>Loading interfaces...</em>';
@@ -112,12 +112,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             interfaceListDiv.innerHTML = interfaces.map((iface, idx) => `
-                <div class="interface-item">
-                    <input type="checkbox" id="iface_${idx}" name="interfaces" value="${iface.name}" ${idx === 0 ? 'checked' : ''}>
-                    <label for="iface_${idx}">
-                        <strong>${iface.name}</strong>
-                        <span class="interface-ip">${iface.addresses.join(', ')}</span>
-                    </label>
+                <div class="interface-config-card ${idx === 0 ? 'enabled' : ''}" data-iface="${iface.name}">
+                    <div class="interface-header">
+                        <input type="checkbox" 
+                               id="iface_${idx}" 
+                               name="interfaces" 
+                               value="${iface.name}" 
+                               ${idx === 0 ? 'checked' : ''}
+                               onchange="this.closest('.interface-config-card').classList.toggle('enabled', this.checked)">
+                        <span class="name">${iface.name}</span>
+                        <span class="ip">${iface.addresses.join(', ')}</span>
+                    </div>
+                    <div class="interface-settings">
+                        <div class="setting-row">
+                            <div class="setting-group">
+                                <label>Workers</label>
+                                <input type="number" name="workers_${iface.name}" value="16" min="1" max="64" 
+                                       title="Number of concurrent worker threads for this interface">
+                            </div>
+                            <div class="setting-group">
+                                <label>Target Mbps</label>
+                                <input type="number" name="throughput_${iface.name}" value="0" min="0" step="10"
+                                       placeholder="0 = max"
+                                       title="Target throughput in Mbps (0 = unlimited/maximum speed)">
+                            </div>
+                            <div class="setting-group">
+                                <label>Ramp Steps</label>
+                                <input type="number" name="ramp_${iface.name}" value="0" min="0" max="20"
+                                       placeholder="0 = none"
+                                       title="Number of ramp-up steps. Divides test into equal phases, each increasing throughput (e.g., 4 steps = 25%, 50%, 75%, 100%)">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `).join('');
         } catch (error) {
@@ -483,40 +509,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Get test configuration from form
-        const duration = document.getElementById('duration').value;
-        const pollInterval = document.getElementById('poll_interval').value;
-        const preTestTime = document.getElementById('pre_test_time').value;
-        const postTestTime = document.getElementById('post_test_time').value;
-        const loadEnabled = document.getElementById('load_enabled').checked;
-        const targetIP = document.getElementById('target_ip').value;
-        const targetPort = document.getElementById('target_port').value;
-        const protocol = document.getElementById('protocol').value;
-        const workers = document.getElementById('workers').value;
-        const packetSize = document.getElementById('packet_size').value;
-        const targetThroughput = document.getElementById('target_throughput').value;
-        const rampSteps = document.getElementById('ramp_steps').value;
-        
-        // Get selected interfaces
-        const selectedInterfaces = Array.from(document.querySelectorAll('input[name="interfaces"]:checked'))
-            .map(cb => cb.value).join(';');
+        // Get test configuration using getCurrentConfig
+        const config = getCurrentConfig();
+
+        // Build interface config summary
+        let interfaceSummary = 'OS Routing';
+        if (config.interfaceConfigs && config.interfaceConfigs.length > 0) {
+            interfaceSummary = config.interfaceConfigs.map(ic => 
+                `${ic.name}(w:${ic.workers},t:${ic.throughput}Mbps,r:${ic.rampSteps})`
+            ).join('; ');
+        }
 
         // Build metadata header
         const metadata = [
             "# Power Consumption Test Report",
             `# Generated: ${new Date().toISOString()}`,
-            `# Duration: ${duration}`,
-            `# Poll Interval: ${pollInterval}`,
-            `# Pre-Test Baseline: ${preTestTime}`,
-            `# Post-Test Baseline: ${postTestTime}`,
-            `# Load Enabled: ${loadEnabled}`,
-            loadEnabled ? `# Target: ${targetIP}:${targetPort}` : "",
-            loadEnabled ? `# Protocol: ${protocol}` : "",
-            loadEnabled ? `# Workers per Interface: ${workers}` : "",
-            loadEnabled ? `# Packet Size: ${packetSize}` : "",
-            loadEnabled ? `# Target Throughput: ${targetThroughput || 'unlimited'} Mbps` : "",
-            loadEnabled ? `# Ramp Steps: ${rampSteps || '0'}` : "",
-            loadEnabled ? `# Interfaces: ${selectedInterfaces || 'OS Routing'}` : "",
+            `# Duration: ${config.duration}`,
+            `# Poll Interval: ${config.pollInterval}`,
+            `# Pre-Test Baseline: ${config.preTestTime}`,
+            `# Post-Test Baseline: ${config.postTestTime}`,
+            `# Load Enabled: ${config.loadEnabled}`,
+            config.loadEnabled ? `# Target: ${config.targetIP}:${config.targetPort}` : "",
+            config.loadEnabled ? `# Protocol: ${config.protocol}` : "",
+            config.loadEnabled ? `# Packet Size: ${config.packetSize}` : "",
+            config.loadEnabled ? `# Interface Configs: ${interfaceSummary}` : "",
             "#",
         ].filter(line => line !== "").join("\n");
 
@@ -544,6 +560,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Build config object for saving
     function getCurrentConfig() {
+        // Collect per-interface configs
+        const interfaceConfigs = [];
+        document.querySelectorAll('.interface-config-card.enabled').forEach(card => {
+            const ifaceName = card.dataset.iface;
+            interfaceConfigs.push({
+                name: ifaceName,
+                workers: card.querySelector(`input[name="workers_${ifaceName}"]`)?.value || '16',
+                throughput: card.querySelector(`input[name="throughput_${ifaceName}"]`)?.value || '0',
+                rampSteps: card.querySelector(`input[name="ramp_${ifaceName}"]`)?.value || '0'
+            });
+        });
+
         return {
             duration: document.getElementById('duration').value,
             pollInterval: document.getElementById('poll_interval').value,
@@ -553,12 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
             targetIP: document.getElementById('target_ip').value,
             targetPort: document.getElementById('target_port').value,
             protocol: document.getElementById('protocol').value,
-            workers: document.getElementById('workers').value,
             packetSize: document.getElementById('packet_size').value,
-            targetThroughput: document.getElementById('target_throughput').value,
-            rampSteps: document.getElementById('ramp_steps').value,
-            interfaces: Array.from(document.querySelectorAll('input[name="interfaces"]:checked'))
-                .map(cb => cb.value)
+            interfaceConfigs: interfaceConfigs
         };
     }
 
@@ -675,6 +699,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Download a saved test as CSV
     function downloadTestAsCSV(test) {
         const config = test.config || {};
+        
+        // Build interface config summary
+        let interfaceSummary = 'OS Routing';
+        if (config.interfaceConfigs && config.interfaceConfigs.length > 0) {
+            interfaceSummary = config.interfaceConfigs.map(ic => 
+                `${ic.name}(w:${ic.workers},t:${ic.throughput}Mbps,r:${ic.rampSteps})`
+            ).join('; ');
+        }
+
         const metadata = [
             "# Power Consumption Test Report",
             `# Generated: ${test.timestamp}`,
@@ -685,11 +718,8 @@ document.addEventListener('DOMContentLoaded', () => {
             `# Load Enabled: ${config.loadEnabled || false}`,
             config.loadEnabled ? `# Target: ${config.targetIP}:${config.targetPort}` : "",
             config.loadEnabled ? `# Protocol: ${config.protocol}` : "",
-            config.loadEnabled ? `# Workers per Interface: ${config.workers}` : "",
             config.loadEnabled ? `# Packet Size: ${config.packetSize}` : "",
-            config.loadEnabled ? `# Target Throughput: ${config.targetThroughput || 'unlimited'} Mbps` : "",
-            config.loadEnabled ? `# Ramp Steps: ${config.rampSteps || '0'}` : "",
-            config.loadEnabled ? `# Interfaces: ${(config.interfaces || []).join(';') || 'OS Routing'}` : "",
+            config.loadEnabled ? `# Interface Configs: ${interfaceSummary}` : "",
             "#",
         ].filter(line => line !== "").join("\n");
 

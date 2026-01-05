@@ -13,11 +13,17 @@ import (
 type Config struct {
 	TargetIP         string
 	TargetPort       int
-	Protocol         string   // "udp" or "tcp"
-	Workers          int      // Workers per interface
+	Protocol         string             // "udp" or "tcp"
 	PacketSize       int
-	Interfaces       []string // List of interface names to use (empty = OS routing)
-	TargetThroughput float64  // Target throughput in Mbps (0 = unlimited)
+	InterfaceConfigs []InterfaceConfig  // Per-interface configuration
+}
+
+// InterfaceConfig holds settings for a single network interface
+type InterfaceConfig struct {
+	Name             string  // Interface name (empty = OS routing)
+	Workers          int     // Number of workers for this interface
+	TargetThroughput float64 // Target throughput in Mbps (0 = unlimited)
+	RampSteps        int     // Number of ramp-up steps (0 = no ramping)
 }
 
 // LoadGenerator defines the interface for generating network load
@@ -83,7 +89,23 @@ func (g *NetworkLoadGenerator) getWorkerDelay(packetSize int) time.Duration {
 		return time.Second // Very slow
 	}
 
-	return time.Duration(float64(time.Second) / packetsPerSecond)
+	// Calculate base delay
+	delay := time.Duration(float64(time.Second) / packetsPerSecond)
+	
+	// Apply overhead compensation factor (time.Sleep has ~1ms minimum on Windows,
+	// plus context switch overhead). Reduce delay by 30% to compensate.
+	// For very small delays (<100µs), skip rate limiting entirely as the
+	// overhead dominates and we can't achieve microsecond precision.
+	if delay < 100*time.Microsecond {
+		return 0 // Let it run at full speed
+	}
+	
+	compensatedDelay := time.Duration(float64(delay) * 0.7) // 30% faster to compensate for overhead
+	if compensatedDelay < time.Microsecond {
+		return 0
+	}
+	
+	return compensatedDelay
 }
 
 func (g *NetworkLoadGenerator) GetThroughput() float64 {
@@ -111,40 +133,58 @@ func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
 }
 
 func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
-	interfaces := config.Interfaces
-	if len(interfaces) == 0 {
-		interfaces = []string{""} // Empty string means use OS routing
+	ifaceConfigs := config.InterfaceConfigs
+	if len(ifaceConfigs) == 0 {
+		ifaceConfigs = []InterfaceConfig{{Name: "", Workers: 8, TargetThroughput: 0, RampSteps: 0}}
 	}
 
-	// Calculate total workers and set target throughput
-	totalWorkers := len(interfaces) * config.Workers
+	// Calculate total workers and total target throughput
+	totalWorkers := 0
+	totalThroughput := 0.0
+	for _, ic := range ifaceConfigs {
+		totalWorkers += ic.Workers
+		totalThroughput += ic.TargetThroughput
+	}
+	
 	g.mu.Lock()
 	g.numWorkers = totalWorkers
-	g.targetThroughput = config.TargetThroughput
+	g.targetThroughput = totalThroughput
 	g.mu.Unlock()
 
-	throughputStr := "unlimited"
-	if config.TargetThroughput > 0 {
-		throughputStr = fmt.Sprintf("%.1f Mbps", config.TargetThroughput)
+	fmt.Printf("Starting load generation: %s://%s:%d (Size: %d bytes)\n",
+		config.Protocol, config.TargetIP, config.TargetPort, config.PacketSize)
+	
+	for _, ic := range ifaceConfigs {
+		throughputStr := "unlimited"
+		if ic.TargetThroughput > 0 {
+			throughputStr = fmt.Sprintf("%.1f Mbps", ic.TargetThroughput)
+		}
+		rampStr := "none"
+		if ic.RampSteps > 0 {
+			rampStr = fmt.Sprintf("%d steps", ic.RampSteps)
+		}
+		ifaceName := ic.Name
+		if ifaceName == "" {
+			ifaceName = "OS-routing"
+		}
+		fmt.Printf("  Interface %s: %d workers, target %s, ramp %s\n", ifaceName, ic.Workers, throughputStr, rampStr)
 	}
-
-	fmt.Printf("Starting load generation: %s://%s:%d (Workers: %d per interface, Size: %d, Interfaces: %v, Target: %s)\n",
-		config.Protocol, config.TargetIP, config.TargetPort, config.Workers, config.PacketSize, interfaces, throughputStr)
 
 	var wg sync.WaitGroup
 
-	// Start workers for each interface
-	for _, ifaceName := range interfaces {
-		for i := 0; i < config.Workers; i++ {
+	// Start workers for each interface with their own config
+	for _, ifaceConfig := range ifaceConfigs {
+		ic := ifaceConfig // capture for goroutine
+		for i := 0; i < ic.Workers; i++ {
 			wg.Add(1)
-			go func(workerID int, iface string) {
+			go func(workerID int) {
 				defer wg.Done()
 				if config.Protocol == "udp" {
-					g.runUDPWorker(ctx, workerID, config, iface)
+					g.runUDPWorkerWithConfig(ctx, workerID, config, ic)
 				} else {
-					g.runTCPWorker(ctx, workerID, config, iface)
+					g.runTCPWorkerWithConfig(ctx, workerID, config, ic)
 				}
-			}(i, ifaceName)
+			}(i)
 		}
 	}
 
@@ -193,7 +233,43 @@ func (g *NetworkLoadGenerator) getLocalAddr(ifaceName string, network string) (n
 	return nil, fmt.Errorf("no IPv4 address found for interface %s", ifaceName)
 }
 
-func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config Config, ifaceName string) {
+// getWorkerDelayForInterface calculates delay per packet for a specific interface config
+func (g *NetworkLoadGenerator) getWorkerDelayForInterface(packetSize int, ic InterfaceConfig) time.Duration {
+	target := ic.TargetThroughput
+	workers := ic.Workers
+
+	if target <= 0 || workers <= 0 {
+		return 0 // No rate limiting
+	}
+
+	// Calculate bytes per second for this worker
+	bytesPerSecond := (target * 1_000_000 / 8) / float64(workers)
+	if bytesPerSecond <= 0 {
+		return 0
+	}
+
+	packetsPerSecond := bytesPerSecond / float64(packetSize)
+	if packetsPerSecond <= 0 {
+		return time.Second
+	}
+
+	delay := time.Duration(float64(time.Second) / packetsPerSecond)
+	
+	// For very small delays, skip rate limiting
+	if delay < 100*time.Microsecond {
+		return 0
+	}
+	
+	// Apply overhead compensation (30% faster)
+	compensatedDelay := time.Duration(float64(delay) * 0.7)
+	if compensatedDelay < time.Microsecond {
+		return 0
+	}
+	
+	return compensatedDelay
+}
+
+func (g *NetworkLoadGenerator) runUDPWorkerWithConfig(ctx context.Context, id int, config Config, ic InterfaceConfig) {
 	// Resolve target address
 	targetAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", config.TargetIP, config.TargetPort))
 	if err != nil {
@@ -202,19 +278,18 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 	}
 
 	// Get local address for interface binding
-	localAddr, err := g.getLocalAddr(ifaceName, "udp")
+	localAddr, err := g.getLocalAddr(ic.Name, "udp")
 	if err != nil {
-		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ifaceName, err)
+		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ic.Name, err)
 		return
 	}
 
 	var localUDPAddr *net.UDPAddr
 	if localAddr != nil {
 		localUDPAddr = localAddr.(*net.UDPAddr)
-		log.Printf("Worker %d: Binding to interface %s (%s)\n", id, ifaceName, localUDPAddr.IP)
+		log.Printf("Worker %d [%s]: Binding to %s\n", id, ic.Name, localUDPAddr.IP)
 	}
 
-	// Create UDP connection with optional interface binding
 	conn, err := net.DialUDP("udp", localUDPAddr, targetAddr)
 	if err != nil {
 		log.Printf("Worker %d: Failed to create UDP connection: %v\n", id, err)
@@ -222,10 +297,8 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 	}
 	defer conn.Close()
 
-	// Set write buffer size
-	conn.SetWriteBuffer(4 * 1024 * 1024) // 4MB buffer
+	conn.SetWriteBuffer(4 * 1024 * 1024)
 
-	// Pre-allocate buffer with random data
 	buffer := make([]byte, config.PacketSize)
 	rand.Read(buffer)
 
@@ -234,20 +307,18 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 		case <-ctx.Done():
 			return
 		default:
-			// Apply rate limiting if target throughput is set
-			delay := g.getWorkerDelay(config.PacketSize)
+			delay := g.getWorkerDelayForInterface(config.PacketSize, ic)
 			if delay > 0 {
 				time.Sleep(delay)
 			}
 
 			n, err := conn.Write(buffer)
 			if err != nil {
-				// Check if it's a temporary error or context closed
 				if ctx.Err() != nil {
 					return
 				}
 				log.Printf("Worker %d: Write error: %v\n", id, err)
-				time.Sleep(100 * time.Millisecond) // Backoff slightly on error
+				time.Sleep(100 * time.Millisecond)
 			} else {
 				g.updateThroughput(n)
 			}
@@ -255,18 +326,16 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 	}
 }
 
-func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config Config, ifaceName string) {
-	// Resolve target address
+func (g *NetworkLoadGenerator) runTCPWorkerWithConfig(ctx context.Context, id int, config Config, ic InterfaceConfig) {
 	targetAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.TargetIP, config.TargetPort))
 	if err != nil {
 		log.Printf("Worker %d: Failed to resolve address: %v\n", id, err)
 		return
 	}
 
-	// Get local address for interface binding
-	localAddr, err := g.getLocalAddr(ifaceName, "tcp")
+	localAddr, err := g.getLocalAddr(ic.Name, "tcp")
 	if err != nil {
-		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ifaceName, err)
+		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ic.Name, err)
 		return
 	}
 
@@ -276,7 +345,7 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 	}
 
 	if localAddr != nil {
-		log.Printf("Worker %d: Binding to interface %s (%s)\n", id, ifaceName, localAddr.(*net.TCPAddr).IP)
+		log.Printf("Worker %d [%s]: Binding to %s\n", id, ic.Name, localAddr.(*net.TCPAddr).IP)
 	}
 
 	conn, err := dialer.DialContext(ctx, "tcp", targetAddr.String())
@@ -286,13 +355,11 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 	}
 	defer conn.Close()
 
-	// Set TCP options for maximum throughput
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
 		tcpConn.SetNoDelay(true)
 		tcpConn.SetWriteBuffer(4 * 1024 * 1024)
 	}
 
-	// Pre-allocate buffer
 	buffer := make([]byte, config.PacketSize)
 	rand.Read(buffer)
 
@@ -301,8 +368,7 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 		case <-ctx.Done():
 			return
 		default:
-			// Apply rate limiting if target throughput is set
-			delay := g.getWorkerDelay(config.PacketSize)
+			delay := g.getWorkerDelayForInterface(config.PacketSize, ic)
 			if delay > 0 {
 				time.Sleep(delay)
 			}
@@ -313,10 +379,21 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 					return
 				}
 				log.Printf("Worker %d: Write error: %v\n", id, err)
-				return // TCP connection broken, exit worker (or could try to reconnect)
+				return
 			} else {
 				g.updateThroughput(n)
 			}
 		}
 	}
+}
+
+// Legacy worker functions for backward compatibility
+func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config Config, ifaceName string) {
+	ic := InterfaceConfig{Name: ifaceName, Workers: 8, TargetThroughput: 0}
+	g.runUDPWorkerWithConfig(ctx, id, config, ic)
+}
+
+func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config Config, ifaceName string) {
+	ic := InterfaceConfig{Name: ifaceName, Workers: 8, TargetThroughput: 0}
+	g.runTCPWorkerWithConfig(ctx, id, config, ic)
 }

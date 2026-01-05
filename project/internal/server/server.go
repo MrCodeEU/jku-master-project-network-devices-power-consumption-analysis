@@ -8,10 +8,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
+	"project/internal/loadgen"
 	"project/internal/network"
 	"project/internal/runner"
 )
@@ -102,30 +102,41 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		protocol = "udp"
 	}
 
-	workers, _ := strconv.Atoi(r.FormValue("workers"))
-	if workers == 0 {
-		workers = 8
-	}
-
 	packetSize, _ := strconv.Atoi(r.FormValue("packet_size"))
 	if packetSize == 0 {
 		packetSize = 1400
 	}
 
-	// Parse selected interfaces
+	// Parse per-interface configurations
 	r.ParseForm()
 	interfaces := r.Form["interfaces"]
-	if len(interfaces) == 0 {
-		// If no interfaces selected, check for comma-separated value
-		ifaceStr := r.FormValue("interfaces")
-		if ifaceStr != "" {
-			interfaces = strings.Split(ifaceStr, ",")
+	
+	var interfaceConfigs []loadgen.InterfaceConfig
+	for _, ifaceName := range interfaces {
+		workers, _ := strconv.Atoi(r.FormValue("workers_" + ifaceName))
+		if workers == 0 {
+			workers = 16
 		}
+		throughput, _ := strconv.ParseFloat(r.FormValue("throughput_" + ifaceName), 64)
+		rampSteps, _ := strconv.Atoi(r.FormValue("ramp_" + ifaceName))
+
+		interfaceConfigs = append(interfaceConfigs, loadgen.InterfaceConfig{
+			Name:             ifaceName,
+			Workers:          workers,
+			TargetThroughput: throughput,
+			RampSteps:        rampSteps,
+		})
 	}
 
-	// Parse throughput target and ramping
-	targetThroughput, _ := strconv.ParseFloat(r.FormValue("target_throughput"), 64)
-	rampSteps, _ := strconv.Atoi(r.FormValue("ramp_steps"))
+	// If no interfaces selected, use OS routing with default config
+	if len(interfaceConfigs) == 0 {
+		interfaceConfigs = []loadgen.InterfaceConfig{{
+			Name:             "",
+			Workers:          16,
+			TargetThroughput: 0,
+			RampSteps:        0,
+		}}
+	}
 
 	config := runner.TestConfig{
 		Duration:         duration,
@@ -137,11 +148,8 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		TargetIP:         targetIP,
 		TargetPort:       targetPort,
 		Protocol:         protocol,
-		Workers:          workers,
 		PacketSize:       packetSize,
-		Interfaces:       interfaces,
-		TargetThroughput: targetThroughput,
-		RampSteps:        rampSteps,
+		InterfaceConfigs: interfaceConfigs,
 	}
 
 	go func() {
