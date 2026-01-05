@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power Consumption Test Runner</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: var(--bg-color);
+            color: #333;
+        }
+        .container { 
+            max-width: 900px; 
+            margin: 0 auto; 
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        input[type="text"], input[type="number"], select { 
+            width: 100%; 
+            padding: 8px 12px; 
+            border: 1px solid #ced4da; 
+            border-radius: 4px; 
+            box-sizing: border-box;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .checkbox-group input { width: auto; margin-right: 10px; }
+        .checkbox-group label { margin-bottom: 0; display: inline; }
+        
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { 
+            padding: 10px 20px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 4px; 
+            font-size: 16px; 
+            transition: background-color 0.2s;
+        }
+        #startBtn { background-color: var(--primary-color); color: white; }
+        #startBtn:hover { background-color: #0056b3; }
+        #startBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        #stopBtn { background-color: #dc3545; color: white; }
+        #stopBtn:hover { background-color: #c82333; }
+        #stopBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #downloadBtn { background-color: var(--success-color); color: white; margin-left: auto; }
+        #downloadBtn:hover { background-color: #218838; }
+        #downloadBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        #testFritzBtn, #testTargetBtn { background-color: var(--secondary-color); color: white; }
+        #testFritzBtn:hover, #testTargetBtn:hover { background-color: #5a6268; }
+        #testFritzBtn:disabled, #testTargetBtn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        #status { margin-top: 10px; font-weight: bold; color: var(--secondary-color); text-align: right; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .connection-status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            display: none;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .status-item:last-child { margin-bottom: 0; }
+        .status-icon {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .status-ok { color: var(--success-color); }
+        .status-error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Power Consumption Test Runner</h1>
+        
+        <div class="card">
+            <h3>Test Configuration</h3>
+            <form id="testForm">
+                <div class="form-group">
+                    <label for="duration">Duration (e.g. 1m, 30s):</label>
+                    <input type="text" id="duration" name="duration" value="60s" placeholder="e.g. 1m, 30s">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="load_enabled" name="load_enabled">
+                    <label for="load_enabled">Enable Network Load Stress Test</label>
+                </div>
+
+                <div id="load_config" style="display: none;">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="target_ip">Target IP:</label>
+                            <input type="text" id="target_ip" name="target_ip" value="192.168.50.100" placeholder="192.168.178.X">
+                        </div>
+                        <div class="form-group">
+                            <label for="target_port">Target Port:</label>
+                            <input type="number" id="target_port" name="target_port" value="80">
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="protocol">Protocol:</label>
+                            <select id="protocol" name="protocol">
+                                <option value="udp" selected>UDP</option>
+                                <option value="tcp">TCP</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="workers">Workers:</label>
+                            <input type="number" id="workers" name="workers" value="16">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="packet_size">Packet Size (bytes):</label>
+                            <input type="number" id="packet_size" name="packet_size" value="1400">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" id="startBtn">Start Test</button>
+                    <button type="button" id="stopBtn" disabled>Stop Test</button>
+                    <button type="button" id="testFritzBtn">Test Fritzbox</button>
+                    <button type="button" id="testTargetBtn">Test Target</button>
+                    <button type="button" id="downloadBtn" disabled>Download CSV</button>
+                </div>
+                
+                <div id="connectionStatus" class="connection-status">
+                    <div class="status-item" id="fritzStatus">
+                        <span class="status-icon">?</span> Fritzbox API
+                    </div>
+                    <div class="status-item" id="dutStatus">
+                        <span class="status-icon">?</span> Device Under Test (Target IP)
+                    </div>
+                </div>
+
+                <div id="status">Status: Ready</div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Power Consumption</h3>
+            <div class="chart-container">
+                <canvas id="powerChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Network Throughput</h3>
+            <div id="throughputDisplay" style="text-align: center; margin-bottom: 10px; font-size: 18px; font-weight: bold;">
+                <span id="throughputValue">0.0</span> Mbps 
+                (<span id="throughputPercent">0.0</span>% of 1 Gbps)
+            </div>
+            <div class="chart-container">
+                <canvas id="throughputChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=3"></script>
+</body>
+</html>

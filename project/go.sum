@@ -1,0 +1,6 @@
+github.com/corbym/gocrest v1.1.1 h1:lry77EvxdkHVL9XaPf0uHTcRPZi9jOXvUbdxhV7djYc=
+github.com/corbym/gocrest v1.1.1/go.mod h1:vhNebfdBGx5l0Nh0OM/CvIVqGAnR9AAbI5qA9OxRUOU=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/nitram509/gofritz v0.2.1 h1:onJG8FZ6RtIz6+pbtkCn9Lf7JzhRXcZbD2Af2L9AmuY=
+github.com/nitram509/gofritz v0.2.1/go.mod h1:wdug2Cp8EQVNq1QihTqh+eqlRTuJmGzxnrsHVkRUNUg=

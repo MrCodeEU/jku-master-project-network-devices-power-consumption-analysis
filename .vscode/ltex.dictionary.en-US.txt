@@ -1,0 +1,9 @@
+Reinegger
+Fritzbox
+NanoPi
+iperf
+FritzBox
+gofritz
+EchoLife
+Gbps
+GbE

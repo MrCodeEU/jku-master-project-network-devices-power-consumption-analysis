@@ -1,0 +1,2 @@
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QEfficiency of ISP provided equipment (e.g. Energie AG Huawei router, etc.) in bridge mode?\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QHow efficient is ISP-provided equipment (e.g., Energie AG Huawei router) when operating in bridge mode compared to dedicated networking equipment?\\E$"}
