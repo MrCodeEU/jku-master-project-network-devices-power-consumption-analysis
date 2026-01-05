@@ -11,32 +11,79 @@ import (
 )
 
 type Config struct {
-	TargetIP   string
-	TargetPort int
-	Protocol   string   // "udp" or "tcp"
-	Workers    int      // Workers per interface
-	PacketSize int
-	Interfaces []string // List of interface names to use (empty = OS routing)
+	TargetIP         string
+	TargetPort       int
+	Protocol         string   // "udp" or "tcp"
+	Workers          int      // Workers per interface
+	PacketSize       int
+	Interfaces       []string // List of interface names to use (empty = OS routing)
+	TargetThroughput float64  // Target throughput in Mbps (0 = unlimited)
 }
 
 // LoadGenerator defines the interface for generating network load
 type LoadGenerator interface {
 	Start(ctx context.Context, config Config) error
-	GetThroughput() float64 // Returns current throughput in Mbps
+	GetThroughput() float64           // Returns current throughput in Mbps
+	SetTargetThroughput(mbps float64) // Set target throughput for rate limiting
+	GetTargetThroughput() float64     // Get current target throughput
 }
 
 // NetworkLoadGenerator floods the target with packets
 type NetworkLoadGenerator struct {
-	mu         sync.Mutex
-	bytesSent  uint64
-	lastUpdate time.Time
-	throughput float64 // Mbps
+	mu               sync.Mutex
+	bytesSent        uint64
+	lastUpdate       time.Time
+	throughput       float64 // Mbps
+	targetThroughput float64 // Target Mbps (0 = unlimited)
+	numWorkers       int     // Total number of workers for rate calculation
 }
 
 func NewNetworkLoadGenerator() *NetworkLoadGenerator {
 	return &NetworkLoadGenerator{
 		lastUpdate: time.Now(),
 	}
+}
+
+// SetTargetThroughput updates the target throughput dynamically
+func (g *NetworkLoadGenerator) SetTargetThroughput(mbps float64) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.targetThroughput = mbps
+}
+
+// GetTargetThroughput returns the current target throughput
+func (g *NetworkLoadGenerator) GetTargetThroughput() float64 {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.targetThroughput
+}
+
+// getWorkerDelay calculates delay per packet to achieve target throughput
+func (g *NetworkLoadGenerator) getWorkerDelay(packetSize int) time.Duration {
+	g.mu.Lock()
+	target := g.targetThroughput
+	workers := g.numWorkers
+	g.mu.Unlock()
+
+	if target <= 0 || workers <= 0 {
+		return 0 // No rate limiting
+	}
+
+	// Calculate bytes per second for this worker
+	// target Mbps / workers = Mbps per worker
+	// Mbps * 1_000_000 / 8 = bytes per second
+	bytesPerSecond := (target * 1_000_000 / 8) / float64(workers)
+	if bytesPerSecond <= 0 {
+		return 0
+	}
+
+	// Calculate packets per second and delay between packets
+	packetsPerSecond := bytesPerSecond / float64(packetSize)
+	if packetsPerSecond <= 0 {
+		return time.Second // Very slow
+	}
+
+	return time.Duration(float64(time.Second) / packetsPerSecond)
 }
 
 func (g *NetworkLoadGenerator) GetThroughput() float64 {
@@ -69,8 +116,20 @@ func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
 		interfaces = []string{""} // Empty string means use OS routing
 	}
 
-	fmt.Printf("Starting load generation: %s://%s:%d (Workers: %d per interface, Size: %d, Interfaces: %v)\n",
-		config.Protocol, config.TargetIP, config.TargetPort, config.Workers, config.PacketSize, interfaces)
+	// Calculate total workers and set target throughput
+	totalWorkers := len(interfaces) * config.Workers
+	g.mu.Lock()
+	g.numWorkers = totalWorkers
+	g.targetThroughput = config.TargetThroughput
+	g.mu.Unlock()
+
+	throughputStr := "unlimited"
+	if config.TargetThroughput > 0 {
+		throughputStr = fmt.Sprintf("%.1f Mbps", config.TargetThroughput)
+	}
+
+	fmt.Printf("Starting load generation: %s://%s:%d (Workers: %d per interface, Size: %d, Interfaces: %v, Target: %s)\n",
+		config.Protocol, config.TargetIP, config.TargetPort, config.Workers, config.PacketSize, interfaces, throughputStr)
 
 	var wg sync.WaitGroup
 
@@ -175,6 +234,12 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 		case <-ctx.Done():
 			return
 		default:
+			// Apply rate limiting if target throughput is set
+			delay := g.getWorkerDelay(config.PacketSize)
+			if delay > 0 {
+				time.Sleep(delay)
+			}
+
 			n, err := conn.Write(buffer)
 			if err != nil {
 				// Check if it's a temporary error or context closed
@@ -236,6 +301,12 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 		case <-ctx.Done():
 			return
 		default:
+			// Apply rate limiting if target throughput is set
+			delay := g.getWorkerDelay(config.PacketSize)
+			if delay > 0 {
+				time.Sleep(delay)
+			}
+
 			n, err := conn.Write(buffer)
 			if err != nil {
 				if ctx.Err() != nil {

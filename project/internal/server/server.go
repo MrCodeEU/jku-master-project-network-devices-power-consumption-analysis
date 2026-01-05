@@ -123,19 +123,25 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Parse throughput target and ramping
+	targetThroughput, _ := strconv.ParseFloat(r.FormValue("target_throughput"), 64)
+	rampSteps, _ := strconv.Atoi(r.FormValue("ramp_steps"))
+
 	config := runner.TestConfig{
-		Duration:     duration,
-		Interval:     pollInterval,
-		PreTestTime:  preTestTime,
-		PostTestTime: postTestTime,
-		Description:  "Web UI Test",
-		LoadEnabled:  loadEnabled,
-		TargetIP:     targetIP,
-		TargetPort:   targetPort,
-		Protocol:     protocol,
-		Workers:      workers,
-		PacketSize:   packetSize,
-		Interfaces:   interfaces,
+		Duration:         duration,
+		Interval:         pollInterval,
+		PreTestTime:      preTestTime,
+		PostTestTime:     postTestTime,
+		Description:      "Web UI Test",
+		LoadEnabled:      loadEnabled,
+		TargetIP:         targetIP,
+		TargetPort:       targetPort,
+		Protocol:         protocol,
+		Workers:          workers,
+		PacketSize:       packetSize,
+		Interfaces:       interfaces,
+		TargetThroughput: targetThroughput,
+		RampSteps:        rampSteps,
 	}
 
 	go func() {

@@ -112,6 +112,31 @@
         }
         .btn-small:hover { background-color: #5a6268; }
 
+        .history-list {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #fff;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            gap: 10px;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-item:hover { background: #f8f9fa; }
+        .history-info { flex: 1; }
+        .history-info .title { font-weight: 500; }
+        .history-info .details { font-size: 0.85em; color: var(--secondary-color); }
+        .history-actions { display: flex; gap: 5px; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+
         .connection-status {
             margin-top: 15px;
             padding: 10px;
@@ -218,6 +243,22 @@
                             <label for="packet_size">Packet Size (bytes):</label>
                             <input type="number" id="packet_size" name="packet_size" value="1400">
                         </div>
+                        <div class="form-group">
+                            <label for="target_throughput">Target Throughput (Mbps):</label>
+                            <input type="number" id="target_throughput" name="target_throughput" value="0" step="0.1" placeholder="0 = unlimited">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="ramp_steps">Ramp-up Steps:</label>
+                            <input type="number" id="ramp_steps" name="ramp_steps" value="0" min="0" placeholder="0 = no ramping">
+                        </div>
+                        <div class="form-group">
+                            <small style="color: var(--secondary-color); display: block; margin-top: 25px;">
+                                Ramp: Gradually increase throughput over test duration
+                            </small>
+                        </div>
                     </div>
                 </div>
                 
@@ -259,8 +300,19 @@
                 <canvas id="throughputChart"></canvas>
             </div>
         </div>
+
+        <div class="card">
+            <h3>Test History</h3>
+            <div id="historyList" class="history-list">
+                <em>No saved tests</em>
+            </div>
+            <div class="btn-group" style="margin-top: 10px;">
+                <button type="button" id="saveTestBtn" disabled>Save Current Test</button>
+                <button type="button" id="clearHistoryBtn" class="btn-danger">Clear All History</button>
+            </div>
+        </div>
     </div>
 
-    <script src="/static/app.js?v=5"></script>
+    <script src="/static/app.js?v=6"></script>
 </body>
 </html>

@@ -1,5 +1,78 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("App initializing...");
+
+    // IndexedDB for test history storage
+    const DB_NAME = 'PowerTestDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'tests';
+    let db = null;
+
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const database = event.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    const store = database.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                    store.createIndex('timestamp', 'timestamp', { unique: false });
+                }
+            };
+        });
+    }
+
+    async function saveTest(testData) {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.add(testData);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function getAllTests() {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function deleteTest(id) {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function getTest(id) {
+        if (!db) await openDatabase();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const request = store.get(id);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // Initialize database
+    openDatabase().catch(err => console.error('Failed to open database:', err));
     
     const powerCtx = document.getElementById('powerChart').getContext('2d');
     const throughputCtx = document.getElementById('throughputChart').getContext('2d');
@@ -326,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.disabled = false;
             stopBtn.disabled = true;
             downloadBtn.disabled = false;
+            if (saveTestBtn) saveTestBtn.disabled = false;
             eventSource.close();
             eventSource = null;
         });
@@ -353,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
                 downloadBtn.disabled = true;
+                if (saveTestBtn) saveTestBtn.disabled = true;
                 
                 // Reset charts and data
                 powerChart.data.labels = [];
@@ -391,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             startBtn.disabled = false;
             stopBtn.disabled = true;
             downloadBtn.disabled = false;
+            if (saveTestBtn) saveTestBtn.disabled = false;
             if (eventSource) {
                 eventSource.close();
                 eventSource = null;
@@ -418,6 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const protocol = document.getElementById('protocol').value;
         const workers = document.getElementById('workers').value;
         const packetSize = document.getElementById('packet_size').value;
+        const targetThroughput = document.getElementById('target_throughput').value;
+        const rampSteps = document.getElementById('ramp_steps').value;
         
         // Get selected interfaces
         const selectedInterfaces = Array.from(document.querySelectorAll('input[name="interfaces"]:checked'))
@@ -436,6 +514,8 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEnabled ? `# Protocol: ${protocol}` : "",
             loadEnabled ? `# Workers per Interface: ${workers}` : "",
             loadEnabled ? `# Packet Size: ${packetSize}` : "",
+            loadEnabled ? `# Target Throughput: ${targetThroughput || 'unlimited'} Mbps` : "",
+            loadEnabled ? `# Ramp Steps: ${rampSteps || '0'}` : "",
             loadEnabled ? `# Interfaces: ${selectedInterfaces || 'OS Routing'}` : "",
             "#",
         ].filter(line => line !== "").join("\n");
@@ -456,4 +536,219 @@ document.addEventListener('DOMContentLoaded', () => {
         link.click();
         document.body.removeChild(link);
     });
+
+    // ============ Test History Management ============
+    const historyListDiv = document.getElementById('historyList');
+    const saveTestBtn = document.getElementById('saveTestBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+    // Build config object for saving
+    function getCurrentConfig() {
+        return {
+            duration: document.getElementById('duration').value,
+            pollInterval: document.getElementById('poll_interval').value,
+            preTestTime: document.getElementById('pre_test_time').value,
+            postTestTime: document.getElementById('post_test_time').value,
+            loadEnabled: document.getElementById('load_enabled').checked,
+            targetIP: document.getElementById('target_ip').value,
+            targetPort: document.getElementById('target_port').value,
+            protocol: document.getElementById('protocol').value,
+            workers: document.getElementById('workers').value,
+            packetSize: document.getElementById('packet_size').value,
+            targetThroughput: document.getElementById('target_throughput').value,
+            rampSteps: document.getElementById('ramp_steps').value,
+            interfaces: Array.from(document.querySelectorAll('input[name="interfaces"]:checked'))
+                .map(cb => cb.value)
+        };
+    }
+
+    // Render history list
+    async function renderHistoryList() {
+        try {
+            const tests = await getAllTests();
+            if (tests.length === 0) {
+                historyListDiv.innerHTML = '<em>No saved tests</em>';
+                return;
+            }
+
+            // Sort by timestamp descending (newest first)
+            tests.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            historyListDiv.innerHTML = tests.map(test => {
+                const date = new Date(test.timestamp);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                const dataPoints = test.data?.length || 0;
+                const loadInfo = test.config?.loadEnabled ? 
+                    `${test.config.protocol?.toUpperCase() || 'UDP'} → ${test.config.targetIP || 'N/A'}` : 
+                    'No load';
+                
+                return `
+                    <div class="history-item" data-id="${test.id}">
+                        <div class="history-info">
+                            <div class="title">${dateStr}</div>
+                            <div class="details">
+                                ${dataPoints} data points | ${test.config?.duration || 'N/A'} | ${loadInfo}
+                            </div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn-small history-load" title="Load into charts">📊 Load</button>
+                            <button class="btn-small history-download" title="Download CSV">💾 CSV</button>
+                            <button class="btn-small btn-danger history-delete" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add event listeners to history buttons
+            historyListDiv.querySelectorAll('.history-item').forEach(item => {
+                const id = parseInt(item.dataset.id);
+
+                item.querySelector('.history-load').addEventListener('click', async () => {
+                    const test = await getTest(id);
+                    if (test && test.data) {
+                        loadTestIntoCharts(test);
+                    }
+                });
+
+                item.querySelector('.history-download').addEventListener('click', async () => {
+                    const test = await getTest(id);
+                    if (test) {
+                        downloadTestAsCSV(test);
+                    }
+                });
+
+                item.querySelector('.history-delete').addEventListener('click', async () => {
+                    if (confirm('Delete this test?')) {
+                        await deleteTest(id);
+                        renderHistoryList();
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error rendering history:', error);
+            historyListDiv.innerHTML = '<em>Error loading history</em>';
+        }
+    }
+
+    // Load a saved test into the charts
+    function loadTestIntoCharts(test) {
+        // Clear existing data
+        collectedData.length = 0;
+        powerChart.data.labels = [];
+        powerChart.data.datasets[0].data = [];
+        throughputChart.data.labels = [];
+        throughputChart.data.datasets[0].data = [];
+        powerChart.options.plugins.annotation.annotations = {};
+        throughputChart.options.plugins.annotation.annotations = {};
+
+        // Load the test data
+        let currentPhase = null;
+        test.data.forEach((dp, idx) => {
+            collectedData.push(dp);
+            const label = dp.elapsed_seconds?.toFixed(0) || idx.toString();
+            powerChart.data.labels.push(label);
+            powerChart.data.datasets[0].data.push(dp.power_mw);
+            throughputChart.data.labels.push(label);
+            throughputChart.data.datasets[0].data.push(dp.throughput_mbps);
+
+            // Add phase annotations
+            if (dp.phase && dp.phase !== currentPhase) {
+                currentPhase = dp.phase;
+                addPhaseAnnotation(dp.phase, idx);
+            }
+        });
+
+        powerChart.update();
+        throughputChart.update();
+
+        // Update throughput display with last value
+        if (test.data.length > 0) {
+            const lastPoint = test.data[test.data.length - 1];
+            throughputValueDiv.textContent = (lastPoint.throughput_mbps || 0).toFixed(1);
+            throughputPercentDiv.textContent = ((lastPoint.throughput_mbps || 0) / 10).toFixed(1);
+        }
+
+        statusDiv.textContent = `Status: Loaded test from ${new Date(test.timestamp).toLocaleString()}`;
+        downloadBtn.disabled = false;
+    }
+
+    // Download a saved test as CSV
+    function downloadTestAsCSV(test) {
+        const config = test.config || {};
+        const metadata = [
+            "# Power Consumption Test Report",
+            `# Generated: ${test.timestamp}`,
+            `# Duration: ${config.duration || 'N/A'}`,
+            `# Poll Interval: ${config.pollInterval || 'N/A'}`,
+            `# Pre-Test Baseline: ${config.preTestTime || '0s'}`,
+            `# Post-Test Baseline: ${config.postTestTime || '0s'}`,
+            `# Load Enabled: ${config.loadEnabled || false}`,
+            config.loadEnabled ? `# Target: ${config.targetIP}:${config.targetPort}` : "",
+            config.loadEnabled ? `# Protocol: ${config.protocol}` : "",
+            config.loadEnabled ? `# Workers per Interface: ${config.workers}` : "",
+            config.loadEnabled ? `# Packet Size: ${config.packetSize}` : "",
+            config.loadEnabled ? `# Target Throughput: ${config.targetThroughput || 'unlimited'} Mbps` : "",
+            config.loadEnabled ? `# Ramp Steps: ${config.rampSteps || '0'}` : "",
+            config.loadEnabled ? `# Interfaces: ${(config.interfaces || []).join(';') || 'OS Routing'}` : "",
+            "#",
+        ].filter(line => line !== "").join("\n");
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + metadata + "\n"
+            + "Timestamp,ElapsedSeconds,PowerMW,ThroughputMbps,Phase\n"
+            + test.data.map(e => `${e.timestamp},${e.elapsed_seconds},${e.power_mw},${e.throughput_mbps},${e.phase}`).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        const timestamp = new Date(test.timestamp).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        link.setAttribute("download", `power_test_${timestamp}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Save current test
+    if (saveTestBtn) {
+        saveTestBtn.addEventListener('click', async () => {
+            if (collectedData.length === 0) {
+                alert('No test data to save');
+                return;
+            }
+
+            try {
+                const testData = {
+                    timestamp: new Date().toISOString(),
+                    config: getCurrentConfig(),
+                    data: [...collectedData]
+                };
+                await saveTest(testData);
+                renderHistoryList();
+                alert('Test saved successfully');
+            } catch (error) {
+                console.error('Error saving test:', error);
+                alert('Failed to save test');
+            }
+        });
+    }
+
+    // Clear all history
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', async () => {
+            if (confirm('Delete ALL saved tests? This cannot be undone.')) {
+                try {
+                    const tests = await getAllTests();
+                    for (const test of tests) {
+                        await deleteTest(test.id);
+                    }
+                    renderHistoryList();
+                } catch (error) {
+                    console.error('Error clearing history:', error);
+                }
+            }
+        });
+    }
+
+    // Initial render of history list
+    renderHistoryList();
 });

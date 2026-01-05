@@ -18,13 +18,15 @@ type TestConfig struct {
 	Description  string
 	
 	// Load Generation
-	LoadEnabled bool
-	TargetIP    string
-	TargetPort  int
-	Protocol    string
-	Workers     int
-	PacketSize  int
-	Interfaces  []string // Network interfaces to use for load generation
+	LoadEnabled      bool
+	TargetIP         string
+	TargetPort       int
+	Protocol         string
+	Workers          int
+	PacketSize       int
+	Interfaces       []string // Network interfaces to use for load generation
+	TargetThroughput float64  // Target throughput in Mbps (0 = unlimited)
+	RampSteps        int      // Number of ramp-up steps (0 = no ramping)
 }
 
 // Phase represents the current test phase
@@ -152,18 +154,24 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 		loadCtx, loadCancel = context.WithCancel(ctx)
 		go func() {
 			loadConfig := loadgen.Config{
-				TargetIP:   config.TargetIP,
-				TargetPort: config.TargetPort,
-				Protocol:   config.Protocol,
-				Workers:    config.Workers,
-				PacketSize: config.PacketSize,
-				Interfaces: config.Interfaces,
+				TargetIP:         config.TargetIP,
+				TargetPort:       config.TargetPort,
+				Protocol:         config.Protocol,
+				Workers:          config.Workers,
+				PacketSize:       config.PacketSize,
+				Interfaces:       config.Interfaces,
+				TargetThroughput: config.TargetThroughput,
 			}
 			err := r.loadGen.Start(loadCtx, loadConfig)
 			if err != nil {
 				fmt.Printf("Load generation error: %v\n", err)
 			}
 		}()
+
+		// Handle ramping if configured
+		if config.RampSteps > 0 && config.TargetThroughput > 0 {
+			go r.runRamping(loadCtx, config)
+		}
 	}
 
 	if err := collectData(config.Duration, PhaseLoad, loadCtx); err != nil {
@@ -191,4 +199,32 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 	result.EndTime = time.Now()
 	fmt.Printf("Test completed. Total data points: %d\n", len(result.DataPoints))
 	return result, nil
+}
+
+// runRamping gradually increases throughput from 0 to target over the test duration
+func (r *Runner) runRamping(ctx context.Context, config TestConfig) {
+	if config.RampSteps <= 0 || config.TargetThroughput <= 0 {
+		return
+	}
+
+	stepDuration := config.Duration / time.Duration(config.RampSteps)
+	stepSize := config.TargetThroughput / float64(config.RampSteps)
+
+	fmt.Printf("Ramping: %d steps over %s, step size: %.1f Mbps\n", 
+		config.RampSteps, config.Duration, stepSize)
+
+	// Start at step 1 (first increment)
+	for step := 1; step <= config.RampSteps; step++ {
+		currentTarget := stepSize * float64(step)
+		r.loadGen.SetTargetThroughput(currentTarget)
+		fmt.Printf("Ramp step %d/%d: Target throughput = %.1f Mbps\n", 
+			step, config.RampSteps, currentTarget)
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(stepDuration):
+			// Continue to next step
+		}
+	}
 }
