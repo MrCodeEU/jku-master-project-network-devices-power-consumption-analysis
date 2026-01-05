@@ -74,6 +74,18 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		duration = 1 * time.Minute
 	}
 
+	pollIntervalStr := r.FormValue("poll_interval")
+	pollInterval, _ := time.ParseDuration(pollIntervalStr)
+	if pollInterval == 0 {
+		pollInterval = 60 * time.Second
+	}
+
+	preTestStr := r.FormValue("pre_test_time")
+	preTestTime, _ := time.ParseDuration(preTestStr)
+
+	postTestStr := r.FormValue("post_test_time")
+	postTestTime, _ := time.ParseDuration(postTestStr)
+
 	loadEnabled := r.FormValue("load_enabled") == "on"
 	targetIP := r.FormValue("target_ip")
 	
@@ -98,15 +110,17 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	config := runner.TestConfig{
-		Duration:    duration,
-		Interval:    1 * time.Second,
-		Description: "Web UI Test",
-		LoadEnabled: loadEnabled,
-		TargetIP:    targetIP,
-		TargetPort:  targetPort,
-		Protocol:    protocol,
-		Workers:     workers,
-		PacketSize:  packetSize,
+		Duration:     duration,
+		Interval:     pollInterval,
+		PreTestTime:  preTestTime,
+		PostTestTime: postTestTime,
+		Description:  "Web UI Test",
+		LoadEnabled:  loadEnabled,
+		TargetIP:     targetIP,
+		TargetPort:   targetPort,
+		Protocol:     protocol,
+		Workers:      workers,
+		PacketSize:   packetSize,
 	}
 
 	go func() {

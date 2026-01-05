@@ -111,8 +111,36 @@
             <h3>Test Configuration</h3>
             <form id="testForm">
                 <div class="form-group">
-                    <label for="duration">Duration (e.g. 1m, 30s):</label>
+                    <label for="duration">Test Duration (e.g. 1m, 30s):</label>
                     <input type="text" id="duration" name="duration" value="60s" placeholder="e.g. 1m, 30s">
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="poll_interval">API Poll Interval:</label>
+                        <select id="poll_interval" name="poll_interval">
+                            <option value="1s">1 second</option>
+                            <option value="5s">5 seconds</option>
+                            <option value="10s">10 seconds</option>
+                            <option value="30s">30 seconds</option>
+                            <option value="60s" selected>60 seconds (1 min)</option>
+                            <option value="120s">120 seconds (2 min)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pre_test_time">Pre-Test Baseline:</label>
+                        <input type="text" id="pre_test_time" name="pre_test_time" value="0s" placeholder="e.g. 2m, 60s">
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="post_test_time">Post-Test Baseline:</label>
+                        <input type="text" id="post_test_time" name="post_test_time" value="0s" placeholder="e.g. 2m, 60s">
+                    </div>
+                    <div class="form-group">
+                        <!-- Placeholder for alignment -->
+                    </div>
                 </div>
 
                 <div class="checkbox-group">
@@ -194,6 +222,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=3"></script>
+    <script src="/static/app.js?v=4"></script>
 </body>
 </html>

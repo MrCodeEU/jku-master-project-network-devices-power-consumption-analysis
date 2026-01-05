@@ -177,6 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let eventSource = null;
     let startTime = null;
     let collectedData = [];
+    let currentPhase = '';
+
+    // Phase colors for charts
+    const phaseColors = {
+        'pre': 'rgba(255, 193, 7, 0.3)',   // Yellow for pre-test
+        'load': 'rgba(75, 192, 192, 0.3)',  // Teal for load
+        'post': 'rgba(108, 117, 125, 0.3)'  // Gray for post-test
+    };
 
     // Connect to SSE
     function connectSSE() {
@@ -196,6 +204,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTime = new Date(data.timestamp).getTime();
             const elapsedSeconds = (currentTime - startTime) / 1000;
 
+            // Update phase status
+            const phase = data.phase || 'load';
+            if (phase !== currentPhase) {
+                currentPhase = phase;
+                const phaseNames = { 'pre': 'Pre-Test Baseline', 'load': 'Load Test', 'post': 'Post-Test Baseline' };
+                statusDiv.textContent = `Status: Running - ${phaseNames[phase] || phase}`;
+            }
+
             // Update Power Chart
             powerChart.data.labels.push(elapsedSeconds);
             powerChart.data.datasets[0].data.push(data.power_mw);
@@ -213,12 +229,13 @@ document.addEventListener('DOMContentLoaded', () => {
             throughputValueDiv.textContent = throughputMbps.toFixed(1);
             throughputPercentDiv.textContent = percentage;
             
-            // Store for CSV export
+            // Store for CSV export with phase info
             collectedData.push({
                 timestamp: data.timestamp,
                 elapsed_seconds: elapsedSeconds,
                 power_mw: data.power_mw,
-                throughput_mbps: throughputMbps
+                throughput_mbps: throughputMbps,
+                phase: phase
             });
         };
 
@@ -306,8 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const csvContent = "data:text/csv;charset=utf-8," 
-            + "Timestamp,ElapsedSeconds,PowerMW,ThroughputMbps\n"
-            + collectedData.map(e => `${e.timestamp},${e.elapsed_seconds},${e.power_mw},${e.throughput_mbps}`).join("\n");
+            + "Timestamp,ElapsedSeconds,PowerMW,ThroughputMbps,Phase\n"
+            + collectedData.map(e => `${e.timestamp},${e.elapsed_seconds},${e.power_mw},${e.throughput_mbps},${e.phase}`).join("\n");
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
