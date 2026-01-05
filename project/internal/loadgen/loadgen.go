@@ -13,9 +13,10 @@ import (
 type Config struct {
 	TargetIP   string
 	TargetPort int
-	Protocol   string // "udp" or "tcp"
-	Workers    int
+	Protocol   string   // "udp" or "tcp"
+	Workers    int      // Workers per interface
 	PacketSize int
+	Interfaces []string // List of interface names to use (empty = OS routing)
 }
 
 // LoadGenerator defines the interface for generating network load
@@ -63,21 +64,29 @@ func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
 }
 
 func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
-	fmt.Printf("Starting load generation: %s://%s:%d (Workers: %d, Size: %d)\n",
-		config.Protocol, config.TargetIP, config.TargetPort, config.Workers, config.PacketSize)
+	interfaces := config.Interfaces
+	if len(interfaces) == 0 {
+		interfaces = []string{""} // Empty string means use OS routing
+	}
+
+	fmt.Printf("Starting load generation: %s://%s:%d (Workers: %d per interface, Size: %d, Interfaces: %v)\n",
+		config.Protocol, config.TargetIP, config.TargetPort, config.Workers, config.PacketSize, interfaces)
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < config.Workers; i++ {
-		wg.Add(1)
-		go func(workerID int) {
-			defer wg.Done()
-			if config.Protocol == "udp" {
-				g.runUDPWorker(ctx, workerID, config)
-			} else {
-				g.runTCPWorker(ctx, workerID, config)
-			}
-		}(i)
+	// Start workers for each interface
+	for _, ifaceName := range interfaces {
+		for i := 0; i < config.Workers; i++ {
+			wg.Add(1)
+			go func(workerID int, iface string) {
+				defer wg.Done()
+				if config.Protocol == "udp" {
+					g.runUDPWorker(ctx, workerID, config, iface)
+				} else {
+					g.runTCPWorker(ctx, workerID, config, iface)
+				}
+			}(i, ifaceName)
+		}
 	}
 
 	// Wait for context cancellation
@@ -89,7 +98,43 @@ func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
 	return nil
 }
 
-func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config Config) {
+// getLocalAddr returns a local address bound to the specified interface
+func (g *NetworkLoadGenerator) getLocalAddr(ifaceName string, network string) (net.Addr, error) {
+	if ifaceName == "" {
+		return nil, nil // Use OS routing
+	}
+
+	iface, err := net.InterfaceByName(ifaceName)
+	if err != nil {
+		return nil, fmt.Errorf("interface %s not found: %w", ifaceName, err)
+	}
+
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get addresses for %s: %w", ifaceName, err)
+	}
+
+	for _, addr := range addrs {
+		var ip net.IP
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+
+		if ip != nil && ip.To4() != nil && !ip.IsLoopback() {
+			if network == "udp" {
+				return &net.UDPAddr{IP: ip, Port: 0}, nil
+			}
+			return &net.TCPAddr{IP: ip, Port: 0}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no IPv4 address found for interface %s", ifaceName)
+}
+
+func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config Config, ifaceName string) {
 	// Resolve target address
 	targetAddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", config.TargetIP, config.TargetPort))
 	if err != nil {
@@ -97,9 +142,21 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 		return
 	}
 
-	// Create UDP connection
-	// We use DialUDP to establish a "connected" UDP socket which is slightly more efficient for repeated writes
-	conn, err := net.DialUDP("udp", nil, targetAddr)
+	// Get local address for interface binding
+	localAddr, err := g.getLocalAddr(ifaceName, "udp")
+	if err != nil {
+		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ifaceName, err)
+		return
+	}
+
+	var localUDPAddr *net.UDPAddr
+	if localAddr != nil {
+		localUDPAddr = localAddr.(*net.UDPAddr)
+		log.Printf("Worker %d: Binding to interface %s (%s)\n", id, ifaceName, localUDPAddr.IP)
+	}
+
+	// Create UDP connection with optional interface binding
+	conn, err := net.DialUDP("udp", localUDPAddr, targetAddr)
 	if err != nil {
 		log.Printf("Worker %d: Failed to create UDP connection: %v\n", id, err)
 		return
@@ -133,7 +190,7 @@ func (g *NetworkLoadGenerator) runUDPWorker(ctx context.Context, id int, config 
 	}
 }
 
-func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config Config) {
+func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config Config, ifaceName string) {
 	// Resolve target address
 	targetAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", config.TargetIP, config.TargetPort))
 	if err != nil {
@@ -141,8 +198,20 @@ func (g *NetworkLoadGenerator) runTCPWorker(ctx context.Context, id int, config 
 		return
 	}
 
+	// Get local address for interface binding
+	localAddr, err := g.getLocalAddr(ifaceName, "tcp")
+	if err != nil {
+		log.Printf("Worker %d: Failed to get local address for %s: %v\n", id, ifaceName, err)
+		return
+	}
+
 	dialer := &net.Dialer{
-		Timeout: 5 * time.Second,
+		Timeout:   5 * time.Second,
+		LocalAddr: localAddr,
+	}
+
+	if localAddr != nil {
+		log.Printf("Worker %d: Binding to interface %s (%s)\n", id, ifaceName, localAddr.(*net.TCPAddr).IP)
 	}
 
 	conn, err := dialer.DialContext(ctx, "tcp", targetAddr.String())

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Power Consumption Test Runner</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <style>
         :root {
             --primary-color: #007bff;
@@ -81,6 +82,36 @@
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
+        .interface-list {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background: #fff;
+        }
+        .interface-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .interface-item:last-child { border-bottom: none; }
+        .interface-item input { margin-right: 10px; }
+        .interface-item label { margin-bottom: 0; cursor: pointer; flex: 1; }
+        .interface-ip { color: var(--secondary-color); font-size: 0.9em; }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-small:hover { background-color: #5a6268; }
+
         .connection-status {
             margin-top: 15px;
             padding: 10px;
@@ -149,6 +180,14 @@
                 </div>
 
                 <div id="load_config" style="display: none;">
+                    <div class="form-group">
+                        <label>Network Interfaces for Load Generation:</label>
+                        <div id="interfaceList" class="interface-list">
+                            <em>Loading interfaces...</em>
+                        </div>
+                        <button type="button" id="refreshInterfacesBtn" class="btn-small">Refresh Interfaces</button>
+                    </div>
+
                     <div class="grid-2">
                         <div class="form-group">
                             <label for="target_ip">Target IP:</label>
@@ -169,7 +208,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="workers">Workers:</label>
+                            <label for="workers">Workers per Interface:</label>
                             <input type="number" id="workers" name="workers" value="16">
                         </div>
                     </div>
@@ -222,6 +261,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=4"></script>
+    <script src="/static/app.js?v=5"></script>
 </body>
 </html>

@@ -24,6 +24,7 @@ type TestConfig struct {
 	Protocol    string
 	Workers     int
 	PacketSize  int
+	Interfaces  []string // Network interfaces to use for load generation
 }
 
 // Phase represents the current test phase
@@ -156,6 +157,7 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 				Protocol:   config.Protocol,
 				Workers:    config.Workers,
 				PacketSize: config.PacketSize,
+				Interfaces: config.Interfaces,
 			}
 			err := r.loadGen.Start(loadCtx, loadConfig)
 			if err != nil {

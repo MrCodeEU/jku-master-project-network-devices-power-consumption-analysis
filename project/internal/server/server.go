@@ -8,9 +8,11 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
+	"project/internal/network"
 	"project/internal/runner"
 )
 
@@ -35,6 +37,7 @@ func (s *Server) Start(addr string) error {
 	http.HandleFunc("/stop", s.handleStop)
 	http.HandleFunc("/test-fritzbox", s.handleTestFritzbox)
 	http.HandleFunc("/test-target", s.handleTestTarget)
+	http.HandleFunc("/interfaces", s.handleGetInterfaces)
 	http.HandleFunc("/events", s.broker.ServeHTTP)
 
 	log.Printf("Server listening on %s", addr)
@@ -109,6 +112,17 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		packetSize = 1400
 	}
 
+	// Parse selected interfaces
+	r.ParseForm()
+	interfaces := r.Form["interfaces"]
+	if len(interfaces) == 0 {
+		// If no interfaces selected, check for comma-separated value
+		ifaceStr := r.FormValue("interfaces")
+		if ifaceStr != "" {
+			interfaces = strings.Split(ifaceStr, ",")
+		}
+	}
+
 	config := runner.TestConfig{
 		Duration:     duration,
 		Interval:     pollInterval,
@@ -121,6 +135,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		Protocol:     protocol,
 		Workers:      workers,
 		PacketSize:   packetSize,
+		Interfaces:   interfaces,
 	}
 
 	go func() {
@@ -168,6 +183,26 @@ func (s *Server) handleStop(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("No test running"))
 	}
 }
+
+func (s *Server) handleGetInterfaces(w http.ResponseWriter, r *http.Request) {
+	ifaces, err := network.GetAvailableInterfaces()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Filter to only show up and non-loopback interfaces
+	var filtered []network.Interface
+	for _, iface := range ifaces {
+		if iface.IsUp && !iface.IsLoopback && len(iface.Addresses) > 0 {
+			filtered = append(filtered, iface)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(filtered)
+}
+
 func (s *Server) handleTestFritzbox(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

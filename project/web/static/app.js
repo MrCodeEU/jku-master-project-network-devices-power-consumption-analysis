@@ -23,9 +23,50 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const interfaceListDiv = document.getElementById('interfaceList');
+    const refreshInterfacesBtn = document.getElementById('refreshInterfacesBtn');
+
+    // Fetch and display network interfaces
+    async function loadInterfaces() {
+        try {
+            interfaceListDiv.innerHTML = '<em>Loading interfaces...</em>';
+            const response = await fetch('/interfaces');
+            const interfaces = await response.json();
+            
+            if (interfaces.length === 0) {
+                interfaceListDiv.innerHTML = '<em>No network interfaces found</em>';
+                return;
+            }
+
+            interfaceListDiv.innerHTML = interfaces.map((iface, idx) => `
+                <div class="interface-item">
+                    <input type="checkbox" id="iface_${idx}" name="interfaces" value="${iface.name}" ${idx === 0 ? 'checked' : ''}>
+                    <label for="iface_${idx}">
+                        <strong>${iface.name}</strong>
+                        <span class="interface-ip">${iface.addresses.join(', ')}</span>
+                    </label>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Error loading interfaces:', error);
+            interfaceListDiv.innerHTML = '<em>Error loading interfaces</em>';
+        }
+    }
+
+    // Load interfaces on page load
+    loadInterfaces();
+
+    // Refresh button
+    if (refreshInterfacesBtn) {
+        refreshInterfacesBtn.addEventListener('click', loadInterfaces);
+    }
+
     function updateLoadConfigVisibility() {
         if (loadEnabledCheckbox && loadConfigDiv) {
             loadConfigDiv.style.display = loadEnabledCheckbox.checked ? 'block' : 'none';
+            if (loadEnabledCheckbox.checked) {
+                loadInterfaces();
+            }
         }
     }
 
@@ -107,6 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Phase transition tracking
+    let phaseAnnotations = {};
+    
     // Initialize Power Chart
     const powerChart = new Chart(powerCtx, {
         type: 'line',
@@ -135,6 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             animation: {
                 duration: 0 // Disable animation for better performance with real-time data
+            },
+            plugins: {
+                annotation: {
+                    annotations: {}
+                }
             }
         }
     });
@@ -170,6 +219,11 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             animation: {
                 duration: 0
+            },
+            plugins: {
+                annotation: {
+                    annotations: {}
+                }
             }
         }
     });
@@ -181,10 +235,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Phase colors for charts
     const phaseColors = {
-        'pre': 'rgba(255, 193, 7, 0.3)',   // Yellow for pre-test
-        'load': 'rgba(75, 192, 192, 0.3)',  // Teal for load
-        'post': 'rgba(108, 117, 125, 0.3)'  // Gray for post-test
+        'pre': { border: 'rgba(255, 193, 7, 0.8)', bg: 'rgba(255, 193, 7, 0.2)' },
+        'load': { border: 'rgba(75, 192, 192, 0.8)', bg: 'rgba(75, 192, 192, 0.2)' },
+        'post': { border: 'rgba(108, 117, 125, 0.8)', bg: 'rgba(108, 117, 125, 0.2)' }
     };
+
+    // Add phase annotation
+    function addPhaseAnnotation(phase, elapsedSeconds) {
+        const phaseNames = { 'pre': 'Pre-Test', 'load': 'Load Test', 'post': 'Post-Test' };
+        const colors = phaseColors[phase] || phaseColors['load'];
+        
+        const annotation = {
+            type: 'line',
+            xMin: elapsedSeconds,
+            xMax: elapsedSeconds,
+            borderColor: colors.border,
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+                display: true,
+                content: phaseNames[phase] || phase,
+                position: 'start'
+            }
+        };
+
+        const annotationId = `phase_${phase}_${elapsedSeconds}`;
+        powerChart.options.plugins.annotation.annotations[annotationId] = annotation;
+        throughputChart.options.plugins.annotation.annotations[annotationId] = { ...annotation };
+    }
 
     // Connect to SSE
     function connectSSE() {
@@ -207,6 +285,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update phase status
             const phase = data.phase || 'load';
             if (phase !== currentPhase) {
+                // Add phase transition marker
+                if (currentPhase !== '') {
+                    addPhaseAnnotation(phase, elapsedSeconds);
+                }
                 currentPhase = phase;
                 const phaseNames = { 'pre': 'Pre-Test Baseline', 'load': 'Load Test', 'post': 'Post-Test Baseline' };
                 statusDiv.textContent = `Status: Running - ${phaseNames[phase] || phase}`;
@@ -275,10 +357,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset charts and data
                 powerChart.data.labels = [];
                 powerChart.data.datasets[0].data = [];
+                powerChart.options.plugins.annotation.annotations = {};
                 powerChart.update();
                 
                 throughputChart.data.labels = [];
                 throughputChart.data.datasets[0].data = [];
+                throughputChart.options.plugins.annotation.annotations = {};
                 throughputChart.update();
                 
                 throughputValueDiv.textContent = '0.0';
@@ -286,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 collectedData = [];
                 startTime = null;
+                currentPhase = '';
 
                 connectSSE();
             } else {
@@ -322,14 +407,51 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Get test configuration from form
+        const duration = document.getElementById('duration').value;
+        const pollInterval = document.getElementById('poll_interval').value;
+        const preTestTime = document.getElementById('pre_test_time').value;
+        const postTestTime = document.getElementById('post_test_time').value;
+        const loadEnabled = document.getElementById('load_enabled').checked;
+        const targetIP = document.getElementById('target_ip').value;
+        const targetPort = document.getElementById('target_port').value;
+        const protocol = document.getElementById('protocol').value;
+        const workers = document.getElementById('workers').value;
+        const packetSize = document.getElementById('packet_size').value;
+        
+        // Get selected interfaces
+        const selectedInterfaces = Array.from(document.querySelectorAll('input[name="interfaces"]:checked'))
+            .map(cb => cb.value).join(';');
+
+        // Build metadata header
+        const metadata = [
+            "# Power Consumption Test Report",
+            `# Generated: ${new Date().toISOString()}`,
+            `# Duration: ${duration}`,
+            `# Poll Interval: ${pollInterval}`,
+            `# Pre-Test Baseline: ${preTestTime}`,
+            `# Post-Test Baseline: ${postTestTime}`,
+            `# Load Enabled: ${loadEnabled}`,
+            loadEnabled ? `# Target: ${targetIP}:${targetPort}` : "",
+            loadEnabled ? `# Protocol: ${protocol}` : "",
+            loadEnabled ? `# Workers per Interface: ${workers}` : "",
+            loadEnabled ? `# Packet Size: ${packetSize}` : "",
+            loadEnabled ? `# Interfaces: ${selectedInterfaces || 'OS Routing'}` : "",
+            "#",
+        ].filter(line => line !== "").join("\n");
+
         const csvContent = "data:text/csv;charset=utf-8," 
+            + metadata + "\n"
             + "Timestamp,ElapsedSeconds,PowerMW,ThroughputMbps,Phase\n"
             + collectedData.map(e => `${e.timestamp},${e.elapsed_seconds},${e.power_mw},${e.throughput_mbps},${e.phase}`).join("\n");
 
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "power_consumption.csv");
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        link.setAttribute("download", `power_test_${timestamp}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
