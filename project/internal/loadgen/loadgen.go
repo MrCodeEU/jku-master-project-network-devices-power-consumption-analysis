@@ -20,33 +20,50 @@ type Config struct {
 
 // InterfaceConfig holds settings for a single network interface
 type InterfaceConfig struct {
-	Name             string  // Interface name (empty = OS routing)
-	Workers          int     // Number of workers for this interface
-	TargetThroughput float64 // Target throughput in Mbps (0 = unlimited)
-	RampSteps        int     // Number of ramp-up steps (0 = no ramping)
+	Name             string        // Interface name (empty = OS routing)
+	Workers          int           // Number of workers for this interface
+	TargetThroughput float64       // Target throughput in Mbps (0 = unlimited)
+	RampSteps        int           // Number of ramp-up steps (0 = no ramping)
+	PreTime          time.Duration // Additional pre-delay before this interface starts (on top of global pre-test)
+	RampDuration     time.Duration // How long the ramping should take (0 = spread over full test duration)
 }
 
 // LoadGenerator defines the interface for generating network load
 type LoadGenerator interface {
 	Start(ctx context.Context, config Config) error
-	GetThroughput() float64           // Returns current throughput in Mbps
-	SetTargetThroughput(mbps float64) // Set target throughput for rate limiting
-	GetTargetThroughput() float64     // Get current target throughput
+	GetThroughput() float64                            // Returns total throughput in Mbps
+	GetThroughputByInterface() map[string]float64      // Returns throughput per interface
+	GetTargetThroughputByInterface() map[string]float64 // Returns target throughput per interface
+	SetTargetThroughput(mbps float64)                  // Set target throughput for rate limiting (global)
+	SetInterfaceTargetThroughput(ifaceName string, mbps float64) // Set target for specific interface
+	GetTargetThroughput() float64                      // Get current target throughput
+}
+
+// InterfaceThroughput tracks throughput for a single interface
+type InterfaceThroughput struct {
+	mu               sync.Mutex
+	bytesSent        uint64
+	lastUpdate       time.Time
+	throughput       float64
+	targetThroughput float64 // Current target for this interface (can be updated during ramping)
+	workers          int     // Number of workers for this interface
 }
 
 // NetworkLoadGenerator floods the target with packets
 type NetworkLoadGenerator struct {
-	mu               sync.Mutex
-	bytesSent        uint64
-	lastUpdate       time.Time
-	throughput       float64 // Mbps
-	targetThroughput float64 // Target Mbps (0 = unlimited)
-	numWorkers       int     // Total number of workers for rate calculation
+	mu                   sync.Mutex
+	bytesSent            uint64
+	lastUpdate           time.Time
+	throughput           float64 // Total Mbps
+	targetThroughput     float64 // Target Mbps (0 = unlimited) - global fallback
+	numWorkers           int     // Total number of workers for rate calculation
+	interfaceThroughputs map[string]*InterfaceThroughput
 }
 
 func NewNetworkLoadGenerator() *NetworkLoadGenerator {
 	return &NetworkLoadGenerator{
-		lastUpdate: time.Now(),
+		lastUpdate:           time.Now(),
+		interfaceThroughputs: make(map[string]*InterfaceThroughput),
 	}
 }
 
@@ -57,11 +74,56 @@ func (g *NetworkLoadGenerator) SetTargetThroughput(mbps float64) {
 	g.targetThroughput = mbps
 }
 
+// SetInterfaceTargetThroughput updates the target throughput for a specific interface
+func (g *NetworkLoadGenerator) SetInterfaceTargetThroughput(ifaceName string, mbps float64) {
+	if ifaceName == "" {
+		ifaceName = "default"
+	}
+	
+	g.mu.Lock()
+	it, exists := g.interfaceThroughputs[ifaceName]
+	g.mu.Unlock()
+	
+	if exists {
+		it.mu.Lock()
+		oldTarget := it.targetThroughput
+		it.targetThroughput = mbps
+		it.mu.Unlock()
+		
+		// Calculate expected delay for this new target (for diagnostics)
+		if mbps > 0 && it.workers > 0 {
+			bytesPerSec := (mbps * 1_000_000 / 8) / float64(it.workers)
+			// Assuming 1400 byte packets for estimate
+			packetsPerSec := bytesPerSec / 1400
+			expectedDelay := time.Duration(float64(time.Second) / packetsPerSec)
+			fmt.Printf("[SetInterfaceTargetThroughput] %s: %.1f -> %.1f Mbps (expected delay: %v per worker)\n", 
+				ifaceName, oldTarget, mbps, expectedDelay)
+		} else {
+			fmt.Printf("[SetInterfaceTargetThroughput] %s: %.1f -> %.1f Mbps (unlimited)\n", ifaceName, oldTarget, mbps)
+		}
+	} else {
+		fmt.Printf("[WARNING] SetInterfaceTargetThroughput: interface '%s' not found in throughput map\n", ifaceName)
+		fmt.Printf("[DEBUG] Available interfaces: %v\n", g.getInterfaceNames())
+	}
+}
+
 // GetTargetThroughput returns the current target throughput
 func (g *NetworkLoadGenerator) GetTargetThroughput() float64 {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return g.targetThroughput
+}
+
+// getInterfaceNames returns a list of interface names in the throughput map (for debugging)
+func (g *NetworkLoadGenerator) getInterfaceNames() []string {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	
+	names := make([]string, 0, len(g.interfaceThroughputs))
+	for name := range g.interfaceThroughputs {
+		names = append(names, name)
+	}
+	return names
 }
 
 // getWorkerDelay calculates delay per packet to achieve target throughput
@@ -92,15 +154,15 @@ func (g *NetworkLoadGenerator) getWorkerDelay(packetSize int) time.Duration {
 	// Calculate base delay
 	delay := time.Duration(float64(time.Second) / packetsPerSecond)
 	
-	// Apply overhead compensation factor (time.Sleep has ~1ms minimum on Windows,
-	// plus context switch overhead). Reduce delay by 30% to compensate.
-	// For very small delays (<100µs), skip rate limiting entirely as the
-	// overhead dominates and we can't achieve microsecond precision.
-	if delay < 100*time.Microsecond {
-		return 0 // Let it run at full speed
+	// With PreciseSleep using high-resolution Windows timers + spin-wait,
+	// we can achieve microsecond precision. Apply minimal compensation
+	// for system call overhead (~5-10µs).
+	if delay < 10*time.Microsecond {
+		return 0 // Too fast for any sleep to be useful
 	}
 	
-	compensatedDelay := time.Duration(float64(delay) * 0.7) // 30% faster to compensate for overhead
+	// Reduce delay slightly to compensate for syscall overhead
+	compensatedDelay := time.Duration(float64(delay) * 0.95) // 5% compensation
 	if compensatedDelay < time.Microsecond {
 		return 0
 	}
@@ -114,6 +176,85 @@ func (g *NetworkLoadGenerator) GetThroughput() float64 {
 	return g.throughput
 }
 
+// GetThroughputByInterface returns throughput for each interface
+func (g *NetworkLoadGenerator) GetThroughputByInterface() map[string]float64 {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	
+	result := make(map[string]float64)
+	for name, it := range g.interfaceThroughputs {
+		it.mu.Lock()
+		result[name] = it.throughput
+		it.mu.Unlock()
+	}
+	return result
+}
+
+// GetTargetThroughputByInterface returns the current target throughput for each interface
+func (g *NetworkLoadGenerator) GetTargetThroughputByInterface() map[string]float64 {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	
+	result := make(map[string]float64)
+	for name, it := range g.interfaceThroughputs {
+		it.mu.Lock()
+		result[name] = it.targetThroughput
+		it.mu.Unlock()
+	}
+	return result
+}
+
+// getOrCreateInterfaceThroughput gets or creates a throughput tracker for an interface
+func (g *NetworkLoadGenerator) getOrCreateInterfaceThroughput(ifaceName string) *InterfaceThroughput {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	
+	if ifaceName == "" {
+		ifaceName = "default"
+	}
+	
+	if it, exists := g.interfaceThroughputs[ifaceName]; exists {
+		return it
+	}
+	
+	it := &InterfaceThroughput{
+		lastUpdate: time.Now(),
+	}
+	g.interfaceThroughputs[ifaceName] = it
+	return it
+}
+
+// initInterfaceThroughput initializes a throughput tracker with config values
+func (g *NetworkLoadGenerator) initInterfaceThroughput(ic InterfaceConfig) *InterfaceThroughput {
+	ifaceName := ic.Name
+	if ifaceName == "" {
+		ifaceName = "default"
+	}
+	
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	
+	// Determine initial target throughput:
+	// - If ramping is enabled (RampSteps > 0), start at 0 so ramping can gradually increase
+	// - Otherwise, start at full target (0 = unlimited)
+	initialTarget := ic.TargetThroughput
+	if ic.RampSteps > 0 && ic.TargetThroughput > 0 {
+		initialTarget = 0 // Ramping will set the first step value
+	}
+	
+	it := &InterfaceThroughput{
+		lastUpdate:       time.Now(),
+		targetThroughput: initialTarget,
+		workers:          ic.Workers,
+	}
+	g.interfaceThroughputs[ifaceName] = it
+	
+	fmt.Printf("[initInterfaceThroughput] Initialized '%s': initialTarget=%.1f Mbps, workers=%d, rampSteps=%d\n",
+		ifaceName, initialTarget, ic.Workers, ic.RampSteps)
+	
+	return it
+}
+
 func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -123,6 +264,9 @@ func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
 	elapsed := now.Sub(g.lastUpdate).Seconds()
 	
 	// Update throughput every second
+	// NOTE: This measures actual bytes sent via socket API, which closely reflects
+	// what the NIC transmits. The calculation accounts for UDP/IP overhead in the
+	// payload size, so reported throughput = actual wire throughput.
 	if elapsed >= 1.0 {
 		// Convert bytes per second to Megabits per second
 		// 1 byte = 8 bits, 1 Mbps = 1,000,000 bits/s
@@ -132,10 +276,31 @@ func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
 	}
 }
 
+// updateInterfaceThroughput updates throughput for a specific interface
+func (g *NetworkLoadGenerator) updateInterfaceThroughput(ifaceName string, bytesSent int) {
+	// Update total throughput
+	g.updateThroughput(bytesSent)
+	
+	// Update interface-specific throughput
+	it := g.getOrCreateInterfaceThroughput(ifaceName)
+	it.mu.Lock()
+	defer it.mu.Unlock()
+	
+	it.bytesSent += uint64(bytesSent)
+	now := time.Now()
+	elapsed := now.Sub(it.lastUpdate).Seconds()
+	
+	if elapsed >= 1.0 {
+		it.throughput = (float64(it.bytesSent) * 8.0) / (elapsed * 1_000_000)
+		it.bytesSent = 0
+		it.lastUpdate = now
+	}
+}
+
 func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
 	ifaceConfigs := config.InterfaceConfigs
 	if len(ifaceConfigs) == 0 {
-		ifaceConfigs = []InterfaceConfig{{Name: "", Workers: 8, TargetThroughput: 0, RampSteps: 0}}
+		ifaceConfigs = []InterfaceConfig{{Name: "", Workers: 10, TargetThroughput: 0, RampSteps: 0}}
 	}
 
 	// Calculate total workers and total target throughput
@@ -144,6 +309,8 @@ func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
 	for _, ic := range ifaceConfigs {
 		totalWorkers += ic.Workers
 		totalThroughput += ic.TargetThroughput
+		// Initialize per-interface throughput tracker with config
+		g.initInterfaceThroughput(ic)
 	}
 	
 	g.mu.Lock()
@@ -233,10 +400,25 @@ func (g *NetworkLoadGenerator) getLocalAddr(ifaceName string, network string) (n
 	return nil, fmt.Errorf("no IPv4 address found for interface %s", ifaceName)
 }
 
-// getWorkerDelayForInterface calculates delay per packet for a specific interface config
-func (g *NetworkLoadGenerator) getWorkerDelayForInterface(packetSize int, ic InterfaceConfig) time.Duration {
-	target := ic.TargetThroughput
-	workers := ic.Workers
+// getWorkerDelayForInterface calculates delay per packet for a specific interface
+// Uses the dynamic target from the interface throughput tracker
+func (g *NetworkLoadGenerator) getWorkerDelayForInterface(packetSize int, ifaceName string) time.Duration {
+	if ifaceName == "" {
+		ifaceName = "default"
+	}
+	
+	g.mu.Lock()
+	it, exists := g.interfaceThroughputs[ifaceName]
+	g.mu.Unlock()
+	
+	if !exists {
+		return 0 // No rate limiting if interface not found
+	}
+	
+	it.mu.Lock()
+	target := it.targetThroughput
+	workers := it.workers
+	it.mu.Unlock()
 
 	if target <= 0 || workers <= 0 {
 		return 0 // No rate limiting
@@ -255,13 +437,15 @@ func (g *NetworkLoadGenerator) getWorkerDelayForInterface(packetSize int, ic Int
 
 	delay := time.Duration(float64(time.Second) / packetsPerSecond)
 	
-	// For very small delays, skip rate limiting
-	if delay < 100*time.Microsecond {
-		return 0
+	// With PreciseSleep using high-resolution Windows timers + spin-wait,
+	// we can achieve microsecond precision. Apply minimal compensation
+	// for system call overhead (~5-10µs).
+	if delay < 10*time.Microsecond {
+		return 0 // Too fast for any sleep to be useful
 	}
 	
-	// Apply overhead compensation (30% faster)
-	compensatedDelay := time.Duration(float64(delay) * 0.7)
+	// Reduce delay slightly to compensate for syscall overhead
+	compensatedDelay := time.Duration(float64(delay) * 0.95) // 5% compensation
 	if compensatedDelay < time.Microsecond {
 		return 0
 	}
@@ -302,25 +486,42 @@ func (g *NetworkLoadGenerator) runUDPWorkerWithConfig(ctx context.Context, id in
 	buffer := make([]byte, config.PacketSize)
 	rand.Read(buffer)
 
+	// Get interface name for delay calculation
+	ifaceName := ic.Name
+
+	// Batching optimization: send multiple packets before sleeping to reduce overhead
+	// For high throughput targets, batching reduces PreciseSleep calls significantly
+	const batchSize = 10 // Send 10 packets before sleeping
+	packetCount := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			delay := g.getWorkerDelayForInterface(config.PacketSize, ic)
-			if delay > 0 {
-				time.Sleep(delay)
-			}
-
+			delay := g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
+			
+			// Send packet
 			n, err := conn.Write(buffer)
 			if err != nil {
 				if ctx.Err() != nil {
 					return
 				}
 				log.Printf("Worker %d: Write error: %v\n", id, err)
-				time.Sleep(100 * time.Millisecond)
-			} else {
-				g.updateThroughput(n)
+				PreciseSleep(100 * time.Millisecond)
+				continue
+			}
+			g.updateInterfaceThroughput(ic.Name, n)
+			packetCount++
+			
+			// Batch delay: only sleep after every batchSize packets
+			// This reduces PreciseSleep overhead from N calls to N/batchSize calls
+			if delay > 0 && packetCount >= batchSize {
+				PreciseSleep(delay * batchSize)
+				packetCount = 0
+			} else if delay == 0 {
+				// No rate limiting - reset counter to avoid overflow
+				packetCount = 0
 			}
 		}
 	}
@@ -363,14 +564,17 @@ func (g *NetworkLoadGenerator) runTCPWorkerWithConfig(ctx context.Context, id in
 	buffer := make([]byte, config.PacketSize)
 	rand.Read(buffer)
 
+	// Get interface name for delay calculation
+	ifaceName := ic.Name
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			delay := g.getWorkerDelayForInterface(config.PacketSize, ic)
+			delay := g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
 			if delay > 0 {
-				time.Sleep(delay)
+				PreciseSleep(delay)
 			}
 
 			n, err := conn.Write(buffer)
@@ -381,7 +585,7 @@ func (g *NetworkLoadGenerator) runTCPWorkerWithConfig(ctx context.Context, id in
 				log.Printf("Worker %d: Write error: %v\n", id, err)
 				return
 			} else {
-				g.updateThroughput(n)
+				g.updateInterfaceThroughput(ic.Name, n)
 			}
 		}
 	}

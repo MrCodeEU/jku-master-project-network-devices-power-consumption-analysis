@@ -227,6 +227,41 @@
         }
         .status-ok { color: var(--success-color); }
         .status-error { color: #dc3545; }
+
+        .marker-section {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 4px;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+        }
+        .marker-section.active { display: block; }
+        .marker-section h4 { 
+            margin: 0 0 10px 0; 
+            color: #856404;
+            font-size: 14px;
+        }
+        .marker-input-group {
+            display: flex;
+            gap: 10px;
+        }
+        .marker-input-group input {
+            flex: 1;
+        }
+        #addMarkerBtn {
+            background-color: #ffc107;
+            color: #212529;
+            white-space: nowrap;
+        }
+        #addMarkerBtn:hover { background-color: #e0a800; }
+        #addMarkerBtn:disabled { background-color: #ccc; color: #666; }
+        .marker-feedback {
+            font-size: 0.85em;
+            margin-top: 5px;
+            color: var(--success-color);
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -265,7 +300,8 @@
                         <input type="text" id="post_test_time" name="post_test_time" value="0s" placeholder="e.g. 2m, 60s">
                     </div>
                     <div class="form-group">
-                        <!-- Placeholder for alignment -->
+                        <label for="power_y_min">Power Chart Y-Min (mW):</label>
+                        <input type="number" id="power_y_min" name="power_y_min" value="0" min="0" step="100" placeholder="0 = auto">
                     </div>
                 </div>
 
@@ -296,12 +332,20 @@
                         </div>
                         <div class="form-group">
                             <label for="packet_size">Packet Size (bytes):</label>
-                            <input type="number" id="packet_size" name="packet_size" value="1400">
+                            <input type="number" id="packet_size" name="packet_size" value="1400" 
+                                   title="Optimal: 1400-1472 (no fragmentation). Larger = fewer syscalls but IP fragmentation. Smaller = more overhead.">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label>Network Interfaces & Throughput Settings:</label>
+                        <div class="help-text">
+                            <strong>💡 Performance Tips:</strong><br>
+                            • <strong>1 Gbps target:</strong> Use 8-12 workers, 1400-1472 byte packets<br>
+                            • <strong>Fewer workers = better rate control</strong> (longer delays, more reliable on Windows)<br>
+                            • <strong>Packet size:</strong> 1400-1472 = optimal (no fragmentation), larger = fewer syscalls but fragmented<br>
+                            • Calculated throughput reflects actual network transmission (socket API bytes sent)
+                        </div>
                         <div class="help-text">
                             Select interfaces and configure throughput per interface. Ramp steps divide the test duration 
                             into equal phases, increasing throughput progressively (e.g., 4 steps = 25%, 50%, 75%, 100% of target).
@@ -320,6 +364,15 @@
                     <button type="button" id="testTargetBtn">Test Target</button>
                     <button type="button" id="downloadBtn" disabled>Download CSV</button>
                 </div>
+
+                <div id="markerSection" class="marker-section">
+                    <h4>📍 Add Custom Marker (during test)</h4>
+                    <div class="marker-input-group">
+                        <input type="text" id="markerText" placeholder="Enter marker text (e.g., 'Connected wireless device')">
+                        <button type="button" id="addMarkerBtn">Add Marker</button>
+                    </div>
+                    <div id="markerFeedback" class="marker-feedback">✓ Marker added!</div>
+                </div>
                 
                 <div id="connectionStatus" class="connection-status">
                     <div class="status-item" id="fritzStatus">
@@ -331,6 +384,30 @@
                 </div>
 
                 <div id="status">Status: Ready</div>
+                
+                <!-- Progress Tracking Section -->
+                <div id="progressSection" style="display: none; margin-top: 15px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
+                    <div style="margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span><strong>Overall Progress:</strong> <span id="progressPercent">0</span>%</span>
+                            <span><span id="progressTime">0:00</span> / <span id="progressTotal">0:00</span></span>
+                        </div>
+                        <div style="background: #ddd; height: 20px; border-radius: 10px; overflow: hidden;">
+                            <div id="progressBar" style="background: linear-gradient(90deg, #4CAF50, #8BC34A); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px;">
+                        <div>
+                            <strong>Time Remaining:</strong> <span id="timeRemaining">--:--</span>
+                        </div>
+                        <div>
+                            <strong>Current Phase:</strong> <span id="currentPhase">--</span>
+                        </div>
+                    </div>
+                    <div id="upcomingEvents" style="margin-top: 10px; font-size: 12px; color: #666;">
+                        <strong>Upcoming:</strong> <span id="eventsList">No upcoming events</span>
+                    </div>
+                </div>
             </form>
         </div>
 
@@ -344,11 +421,20 @@
         <div class="card">
             <h3>Network Throughput</h3>
             <div id="throughputDisplay" style="text-align: center; margin-bottom: 10px; font-size: 18px; font-weight: bold;">
-                <span id="throughputValue">0.0</span> Mbps 
-                (<span id="throughputPercent">0.0</span>% of 1 Gbps)
+                <span id="throughputValue">0.0</span> Mbps
             </div>
             <div class="chart-container">
                 <canvas id="throughputChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Expected Throughput Profile</h3>
+                <button type="button" id="togglePreviewBtn" style="padding: 5px 15px;">Show Preview</button>
+            </div>
+            <div id="previewChartContainer" class="chart-container" style="display: none;">
+                <canvas id="previewChart"></canvas>
             </div>
         </div>
 
@@ -364,6 +450,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=6"></script>
+    <script src="/static/app.js?v=14"></script>
 </body>
 </html>

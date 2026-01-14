@@ -35,6 +35,7 @@ func (s *Server) Start(addr string) error {
 	http.HandleFunc("/", s.handleIndex)
 	http.HandleFunc("/start", s.handleStart)
 	http.HandleFunc("/stop", s.handleStop)
+	http.HandleFunc("/marker", s.handleAddMarker)
 	http.HandleFunc("/test-fritzbox", s.handleTestFritzbox)
 	http.HandleFunc("/test-target", s.handleTestTarget)
 	http.HandleFunc("/interfaces", s.handleGetInterfaces)
@@ -115,16 +116,20 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 	for _, ifaceName := range interfaces {
 		workers, _ := strconv.Atoi(r.FormValue("workers_" + ifaceName))
 		if workers == 0 {
-			workers = 16
+			workers = 10 // Default: 10 workers for good balance
 		}
 		throughput, _ := strconv.ParseFloat(r.FormValue("throughput_" + ifaceName), 64)
 		rampSteps, _ := strconv.Atoi(r.FormValue("ramp_" + ifaceName))
+		preTime, _ := time.ParseDuration(r.FormValue("pretime_" + ifaceName))
+		rampDuration, _ := time.ParseDuration(r.FormValue("rampduration_" + ifaceName))
 
 		interfaceConfigs = append(interfaceConfigs, loadgen.InterfaceConfig{
 			Name:             ifaceName,
 			Workers:          workers,
 			TargetThroughput: throughput,
 			RampSteps:        rampSteps,
+			PreTime:          preTime,
+			RampDuration:     rampDuration,
 		})
 	}
 
@@ -135,6 +140,8 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 			Workers:          16,
 			TargetThroughput: 0,
 			RampSteps:        0,
+			PreTime:          0,
+			RampDuration:     0,
 		}}
 	}
 
@@ -195,6 +202,31 @@ func (s *Server) handleStop(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Test stopped"))
 	} else {
 		w.Write([]byte("No test running"))
+	}
+}
+
+func (s *Server) handleAddMarker(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	message := r.FormValue("message")
+	if message == "" {
+		http.Error(w, "Message is required", http.StatusBadRequest)
+		return
+	}
+
+	if !s.runner.IsTestActive() {
+		http.Error(w, "No test running", http.StatusConflict)
+		return
+	}
+
+	if s.runner.AddCustomMarker(message) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Marker added"))
+	} else {
+		http.Error(w, "Failed to add marker", http.StatusInternalServerError)
 	}
 }
 
