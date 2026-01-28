@@ -27,6 +27,12 @@ New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 169.254.1.4 -PrefixLeng
 New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 169.254.1.5 -PrefixLength 16
 New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 169.254.1.6 -PrefixLength 16
 
+## for huamei modem
+New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 192.168.18.3 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 192.168.18.4 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.18.5 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.18.6 -PrefixLength 16
+
 ### static routing (is this necessarly?)
 New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 5" -NextHop "0.0.0.0" -RouteMetric 2
 New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 7" -NextHop "0.0.0.0" -RouteMetric 3

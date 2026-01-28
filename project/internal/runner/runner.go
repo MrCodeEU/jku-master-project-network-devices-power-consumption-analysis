@@ -17,14 +17,12 @@ type TestConfig struct {
 	PreTestTime  time.Duration
 	PostTestTime time.Duration
 	Description  string
-	
+	TestName     string // User-defined test name
+	DeviceName   string // Device under test name
+
 	// Load Generation
-	LoadEnabled      bool
-	TargetIP         string
-	TargetPort       int
-	Protocol         string
-	PacketSize       int
-	InterfaceConfigs []loadgen.InterfaceConfig // Per-interface configuration
+	LoadEnabled bool
+	LoadConfig  loadgen.Config // Complete load generation configuration
 }
 
 // Phase represents the current test phase
@@ -263,18 +261,18 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 	// Phase 2: Load test
 	var loadCancel context.CancelFunc
 	var loadCtx context.Context
-	if config.LoadEnabled && config.TargetIP != "" {
+	if config.LoadEnabled && (config.LoadConfig.TargetIP != "" || config.LoadConfig.TargetMAC != "") {
 		loadCtx, loadCancel = context.WithCancel(ctx)
-		
+
 		// Start interfaces with their individual pre-delays
-		for _, ic := range config.InterfaceConfigs {
+		for _, ic := range config.LoadConfig.InterfaceConfigs {
 			ifaceConfig := ic // capture for goroutine
 			go func() {
 				ifaceName := ifaceConfig.Name
 				if ifaceName == "" {
 					ifaceName = "OS-routing"
 				}
-				
+
 				// Wait for interface-specific pre-delay
 				if ifaceConfig.PreTime > 0 {
 					fmt.Printf("[%s] Waiting %.1fs before starting...\n", ifaceName, ifaceConfig.PreTime.Seconds())
@@ -284,18 +282,15 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 					case <-time.After(ifaceConfig.PreTime):
 					}
 				}
-				
+
 				// Notify interface start
 				r.addEvent(EventInterfaceStart, fmt.Sprintf("Interface %s started", ifaceName))
-				
-				loadConfig := loadgen.Config{
-					TargetIP:         config.TargetIP,
-					TargetPort:       config.TargetPort,
-					Protocol:         config.Protocol,
-					PacketSize:       config.PacketSize,
-					InterfaceConfigs: []loadgen.InterfaceConfig{ifaceConfig},
-				}
-				err := r.loadGen.Start(loadCtx, loadConfig)
+
+				// Create per-interface load config
+				perInterfaceConfig := config.LoadConfig
+				perInterfaceConfig.InterfaceConfigs = []loadgen.InterfaceConfig{ifaceConfig}
+
+				err := r.loadGen.Start(loadCtx, perInterfaceConfig)
 				if err != nil {
 					fmt.Printf("Load generation error [%s]: %v\n", ifaceName, err)
 				}

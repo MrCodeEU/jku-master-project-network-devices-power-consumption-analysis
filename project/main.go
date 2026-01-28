@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"project/internal/database"
 	"project/internal/fritzbox"
 	"project/internal/loadgen"
 	"project/internal/runner"
@@ -44,7 +45,20 @@ func main() {
 
 	lg := loadgen.NewNetworkLoadGenerator()
 	r := runner.NewRunner(meter, lg)
-	srv := server.NewServer(r)
+
+	// Initialize database
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "tests.db"
+	}
+	db, err := database.New(dbPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+	log.Printf("Database initialized: %s", dbPath)
+
+	srv := server.NewServer(r, db)
 
 	log.Printf("Starting server on %s", *addr)
 	if err := srv.Start(*addr); err != nil {

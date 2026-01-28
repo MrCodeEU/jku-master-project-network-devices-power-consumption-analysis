@@ -190,6 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveConfigToStorage() {
         try {
             const config = {
+                testName: document.getElementById('test_name')?.value,
+                deviceName: document.getElementById('device_name')?.value,
                 duration: document.getElementById('duration')?.value,
                 pollInterval: document.getElementById('poll_interval')?.value,
                 preTestTime: document.getElementById('pre_test_time')?.value,
@@ -199,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetIP: document.getElementById('target_ip')?.value,
                 targetPort: document.getElementById('target_port')?.value,
                 protocol: document.getElementById('protocol')?.value,
+                targetMAC: document.getElementById('target_mac')?.value,
                 packetSize: document.getElementById('packet_size')?.value,
                 // Store interface configs by name
                 interfaceConfigs: {}
@@ -232,8 +235,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const config = JSON.parse(stored);
             console.log('Restoring config from localStorage');
-            
+
             // Restore basic fields
+            if (config.testName) document.getElementById('test_name').value = config.testName;
+            if (config.deviceName) document.getElementById('device_name').value = config.deviceName;
             if (config.duration) document.getElementById('duration').value = config.duration;
             if (config.pollInterval) document.getElementById('poll_interval').value = config.pollInterval;
             if (config.preTestTime) document.getElementById('pre_test_time').value = config.preTestTime;
@@ -245,7 +250,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (config.targetIP) document.getElementById('target_ip').value = config.targetIP;
             if (config.targetPort) document.getElementById('target_port').value = config.targetPort;
-            if (config.protocol) document.getElementById('protocol').value = config.protocol;
+            if (config.protocol) {
+                document.getElementById('protocol').value = config.protocol;
+                // Trigger protocol change event to show/hide Layer 2 config
+                document.getElementById('protocol').dispatchEvent(new Event('change'));
+            }
+            if (config.targetMAC) document.getElementById('target_mac').value = config.targetMAC;
             if (config.packetSize) document.getElementById('packet_size').value = config.packetSize;
             
             // Restore load enabled checkbox
@@ -411,7 +421,119 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
+    // Protocol change handler - show/hide Layer 2 config
+    const protocolSelect = document.getElementById('protocol');
+    const layer2Config = document.getElementById('layer2Config');
+    const targetIPGroup = document.getElementById('target_ip')?.closest('.form-group');
+    const targetPortGroup = document.getElementById('target_port')?.closest('.form-group');
+
+    if (protocolSelect && layer2Config) {
+        protocolSelect.addEventListener('change', () => {
+            const isLayer2 = protocolSelect.value === 'layer2';
+            layer2Config.style.display = isLayer2 ? 'grid' : 'none';
+
+            // Hide IP/Port for Layer 2, show for TCP/UDP
+            if (targetIPGroup) targetIPGroup.style.display = isLayer2 ? 'none' : 'block';
+            if (targetPortGroup) targetPortGroup.style.display = isLayer2 ? 'none' : 'block';
+        });
+
+        // Trigger initial state
+        protocolSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Show pcap devices handler
+    const showPcapDevicesBtn = document.getElementById('showPcapDevicesBtn');
+    if (showPcapDevicesBtn) {
+        showPcapDevicesBtn.addEventListener('click', async () => {
+            const devicesDiv = document.getElementById('discoveredDevices');
+            const listDiv = document.getElementById('devicesList');
+
+            devicesDiv.style.display = 'block';
+            listDiv.innerHTML = 'Loading pcap devices...';
+
+            try {
+                const response = await fetch('/pcap-devices');
+                const devices = await response.json();
+
+                if (devices.length === 0) {
+                    listDiv.innerHTML = 'No pcap devices found. Make sure WinPcap/Npcap is installed and you have administrator privileges.';
+                } else {
+                    let html = '<h4>Available Pcap Devices:</h4><table style="width: 100%; font-size: 0.9em;"><thead><tr><th>Device Name</th><th>Description</th><th>Addresses</th></tr></thead><tbody>';
+                    devices.forEach(device => {
+                        html += `<tr>
+                            <td style="font-family: monospace; font-size: 0.8em;">${device.name}</td>
+                            <td>${device.description || '-'}</td>
+                            <td>${device.addresses.join(', ') || '-'}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    html += '<p style="margin-top: 10px; font-size: 0.85em; color: var(--secondary-color);">Use the interface friendly name (e.g., "Ethernet") in the interface configuration. The system will automatically map it to the correct pcap device.</p>';
+                    listDiv.innerHTML = html;
+                }
+            } catch (err) {
+                listDiv.innerHTML = `Error loading pcap devices: ${err.message}`;
+            }
+        });
+    }
+
+    // Device discovery handler
+    const discoverDevicesBtn = document.getElementById('discoverDevicesBtn');
+    const discoveredDevicesDiv = document.getElementById('discoveredDevices');
+    const devicesListDiv = document.getElementById('devicesList');
+
+    if (discoverDevicesBtn) {
+        discoverDevicesBtn.addEventListener('click', async () => {
+            discoveredDevicesDiv.style.display = 'block';
+            devicesListDiv.innerHTML = 'Scanning network... This may take up to 10 seconds.';
+            discoverDevicesBtn.disabled = true;
+
+            try {
+                // Start discovery
+                const response = await fetch('/discover', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Discovery failed');
+                }
+
+                // Poll for results after 6 seconds (give time for ARP responses)
+                setTimeout(async () => {
+                    try {
+                        const devicesResponse = await fetch('/discovered-devices');
+                        const devices = await devicesResponse.json();
+
+                        if (devices.length === 0) {
+                            devicesListDiv.innerHTML = 'No devices found. Make sure you have admin privileges and devices are online.';
+                        } else {
+                            let html = '<table style="width: 100%; font-size: 0.9em;"><thead><tr><th>IP Address</th><th>MAC Address</th><th>Interface</th><th>Hostname</th><th>Action</th></tr></thead><tbody>';
+                            devices.forEach(device => {
+                                html += `<tr>
+                                    <td>${device.ip_address}</td>
+                                    <td>${device.mac_address}</td>
+                                    <td>${device.interface}</td>
+                                    <td>${device.hostname || '-'}</td>
+                                    <td><button class="btn-small" onclick="selectDevice('${device.mac_address}', '${device.ip_address}')">Select</button></td>
+                                </tr>`;
+                            });
+                            html += '</tbody></table>';
+                            devicesListDiv.innerHTML = html;
+                        }
+                    } catch (err) {
+                        devicesListDiv.innerHTML = `Error loading devices: ${err.message}`;
+                    } finally {
+                        discoverDevicesBtn.disabled = false;
+                    }
+                }, 6000);
+
+            } catch (err) {
+                devicesListDiv.innerHTML = `Error starting discovery: ${err.message}`;
+                discoverDevicesBtn.disabled = false;
+            }
+        });
+    }
+
     // Initialize Power Chart
     const powerChart = new Chart(powerCtx, {
         type: 'line',
@@ -573,6 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let startTime = null;
     let collectedData = [];
     let currentPhase = '';
+    let lastTestConfig = null; // Store config when test starts for CSV export
 
     // Phase colors for charts
     const phaseColors = {
@@ -1120,14 +1243,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 collectedData = [];
                 startTime = null;
                 currentPhase = '';
-                
+
+                // Store config for CSV export
+                lastTestConfig = getCurrentConfig();
+
                 // Show progress section and initialize
                 const progressSection = document.getElementById('progressSection');
                 if (progressSection) {
                     progressSection.style.display = 'block';
                     // Calculate total duration and build event timeline
-                    const testConfig = getCurrentConfig();
-                    updateProgressTracking(testConfig);
+                    updateProgressTracking(lastTestConfig);
                 }
 
                 connectSSE();
@@ -1170,8 +1295,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('First data point:', collectedData[0]);
         console.log('Last data point:', collectedData[collectedData.length - 1]);
 
-        // Get test configuration using getCurrentConfig
-        const config = getCurrentConfig();
+        // Use stored test configuration (not current form values)
+        const config = lastTestConfig || getCurrentConfig();
 
         // Build interface config summary
         let interfaceSummary = 'OS Routing';
@@ -1182,6 +1307,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Build metadata header
+        const targetInfo = config.protocol === 'layer2' && config.targetMAC
+            ? config.targetMAC
+            : `${config.targetIP}:${config.targetPort}`;
+
         const metadata = [
             "# Power Consumption Test Report",
             `# Generated: ${new Date().toISOString()}`,
@@ -1190,7 +1319,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `# Pre-Test Baseline: ${config.preTestTime}`,
             `# Post-Test Baseline: ${config.postTestTime}`,
             `# Load Enabled: ${config.loadEnabled}`,
-            config.loadEnabled ? `# Target: ${config.targetIP}:${config.targetPort}` : "",
+            config.loadEnabled ? `# Target: ${targetInfo}` : "",
             config.loadEnabled ? `# Protocol: ${config.protocol}` : "",
             config.loadEnabled ? `# Packet Size: ${config.packetSize}` : "",
             config.loadEnabled ? `# Interface Configs: ${interfaceSummary}` : "",
@@ -1340,6 +1469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadEnabled: document.getElementById('load_enabled').checked,
             targetIP: document.getElementById('target_ip').value,
             targetPort: document.getElementById('target_port').value,
+            targetMAC: document.getElementById('target_mac')?.value || '',
             protocol: document.getElementById('protocol').value,
             packetSize: document.getElementById('packet_size').value,
             interfaceConfigs: interfaceConfigs
@@ -1511,6 +1641,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ).join('; ');
         }
 
+        // Build target info based on protocol
+        const targetInfo = config.protocol === 'layer2' && config.targetMAC
+            ? config.targetMAC
+            : `${config.targetIP}:${config.targetPort}`;
+
         const metadata = [
             "# Power Consumption Test Report",
             `# Generated: ${test.timestamp}`,
@@ -1519,7 +1654,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `# Pre-Test Baseline: ${config.preTestTime || '0s'}`,
             `# Post-Test Baseline: ${config.postTestTime || '0s'}`,
             `# Load Enabled: ${config.loadEnabled || false}`,
-            config.loadEnabled ? `# Target: ${config.targetIP}:${config.targetPort}` : "",
+            config.loadEnabled ? `# Target: ${targetInfo}` : "",
             config.loadEnabled ? `# Protocol: ${config.protocol}` : "",
             config.loadEnabled ? `# Packet Size: ${config.packetSize}` : "",
             config.loadEnabled ? `# Interface Configs: ${interfaceSummary}` : "",
@@ -1592,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const testData = {
                     timestamp: new Date().toISOString(),
-                    config: getCurrentConfig(),
+                    config: lastTestConfig || getCurrentConfig(),
                     data: [...collectedData]
                 };
                 await saveTest(testData);
@@ -1625,3 +1760,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial render of history list
     renderHistoryList();
 });
+
+// Global function to select a device from discovery results
+function selectDevice(mac, ip) {
+    document.getElementById('target_mac').value = mac;
+    document.getElementById('target_ip').value = ip;
+    alert(`Selected device:\nMAC: ${mac}\nIP: ${ip}`);
+}

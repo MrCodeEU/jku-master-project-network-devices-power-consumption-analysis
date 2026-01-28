@@ -13,8 +13,9 @@ import (
 type Config struct {
 	TargetIP         string
 	TargetPort       int
-	Protocol         string             // "udp" or "tcp"
+	Protocol         string             // "udp", "tcp", or "layer2"
 	PacketSize       int
+	TargetMAC        string             // Target MAC address for Layer 2 (required for layer2 protocol)
 	InterfaceConfigs []InterfaceConfig  // Per-interface configuration
 }
 
@@ -41,7 +42,10 @@ type LoadGenerator interface {
 
 // InterfaceThroughput tracks throughput for a single interface
 type InterfaceThroughput struct {
-	mu               sync.Mutex
+	mu               sync.RWMutex
+	BytesSent        uint64
+	PacketsSent      uint64
+	Mbps             float64
 	bytesSent        uint64
 	lastUpdate       time.Time
 	throughput       float64
@@ -58,6 +62,8 @@ type NetworkLoadGenerator struct {
 	targetThroughput     float64 // Target Mbps (0 = unlimited) - global fallback
 	numWorkers           int     // Total number of workers for rate calculation
 	interfaceThroughputs map[string]*InterfaceThroughput
+	layer2Gen            *Layer2Generator // Layer 2 generator
+	usingLayer2          bool             // Whether we're using Layer 2 mode
 }
 
 func NewNetworkLoadGenerator() *NetworkLoadGenerator {
@@ -173,6 +179,12 @@ func (g *NetworkLoadGenerator) getWorkerDelay(packetSize int) time.Duration {
 func (g *NetworkLoadGenerator) GetThroughput() float64 {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+
+	// Use Layer 2 throughput if in Layer 2 mode
+	if g.usingLayer2 {
+		return g.GetLayer2Throughput()
+	}
+
 	return g.throughput
 }
 
@@ -180,7 +192,12 @@ func (g *NetworkLoadGenerator) GetThroughput() float64 {
 func (g *NetworkLoadGenerator) GetThroughputByInterface() map[string]float64 {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
+	// Use Layer 2 throughput if in Layer 2 mode
+	if g.usingLayer2 {
+		return g.GetLayer2ThroughputByInterface()
+	}
+
 	result := make(map[string]float64)
 	for name, it := range g.interfaceThroughputs {
 		it.mu.Lock()
@@ -194,7 +211,12 @@ func (g *NetworkLoadGenerator) GetThroughputByInterface() map[string]float64 {
 func (g *NetworkLoadGenerator) GetTargetThroughputByInterface() map[string]float64 {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	
+
+	// Use Layer 2 target throughput if in Layer 2 mode
+	if g.usingLayer2 {
+		return g.GetLayer2TargetThroughputByInterface()
+	}
+
 	result := make(map[string]float64)
 	for name, it := range g.interfaceThroughputs {
 		it.mu.Lock()
@@ -298,6 +320,14 @@ func (g *NetworkLoadGenerator) updateInterfaceThroughput(ifaceName string, bytes
 }
 
 func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
+	// Handle Layer 2 protocol separately
+	if config.Protocol == "layer2" {
+		g.mu.Lock()
+		g.usingLayer2 = true
+		g.mu.Unlock()
+		return g.StartLayer2(ctx, config)
+	}
+
 	ifaceConfigs := config.InterfaceConfigs
 	if len(ifaceConfigs) == 0 {
 		ifaceConfigs = []InterfaceConfig{{Name: "", Workers: 10, TargetThroughput: 0, RampSteps: 0}}
@@ -312,15 +342,16 @@ func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
 		// Initialize per-interface throughput tracker with config
 		g.initInterfaceThroughput(ic)
 	}
-	
+
 	g.mu.Lock()
 	g.numWorkers = totalWorkers
 	g.targetThroughput = totalThroughput
+	g.usingLayer2 = false
 	g.mu.Unlock()
 
 	fmt.Printf("Starting load generation: %s://%s:%d (Size: %d bytes)\n",
 		config.Protocol, config.TargetIP, config.TargetPort, config.PacketSize)
-	
+
 	for _, ic := range ifaceConfigs {
 		throughputStr := "unlimited"
 		if ic.TargetThroughput > 0 {

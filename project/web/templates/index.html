@@ -267,10 +267,27 @@
 <body>
     <div class="container">
         <h1>Power Consumption Test Runner</h1>
-        
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="window.location.href='/analysis'" style="padding: 10px 30px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                Go to Analysis Page
+            </button>
+        </div>
+
         <div class="card">
             <h3>Test Configuration</h3>
             <form id="testForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="test_name">Test Name:</label>
+                        <input type="text" id="test_name" name="test_name" placeholder="e.g. Full Load Test" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="device_name">Device Under Test:</label>
+                        <input type="text" id="device_name" name="device_name" placeholder="e.g. FritzBox 7530" required>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="duration">Test Duration (e.g. 1m, 30s):</label>
                     <input type="text" id="duration" name="duration" value="60s" placeholder="e.g. 1m, 30s">
@@ -326,14 +343,44 @@
                         <div class="form-group">
                             <label for="protocol">Protocol:</label>
                             <select id="protocol" name="protocol">
-                                <option value="udp" selected>UDP</option>
-                                <option value="tcp">TCP</option>
+                                <option value="udp" selected>UDP (Layer 3/4)</option>
+                                <option value="tcp">TCP (Layer 3/4)</option>
+                                <option value="layer2">Layer 2 (Raw Ethernet)</option>
                             </select>
+                            <p style="font-size: 0.85em; color: var(--secondary-color); margin-top: 5px;">
+                                Layer 2 requires admin privileges and target MAC address
+                            </p>
                         </div>
                         <div class="form-group">
                             <label for="packet_size">Packet Size (bytes):</label>
-                            <input type="number" id="packet_size" name="packet_size" value="1400" 
+                            <input type="number" id="packet_size" name="packet_size" value="1400"
                                    title="Optimal: 1400-1472 (no fragmentation). Larger = fewer syscalls but IP fragmentation. Smaller = more overhead.">
+                        </div>
+                    </div>
+
+                    <!-- Network Device Discovery (works for all protocols) -->
+                    <div class="form-group">
+                        <label>Network Device Discovery:</label>
+                        <div class="help-text">
+                            Discover devices on your network using ARP scanning. Works for UDP, TCP, and Layer 2 tests.
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" id="discoverDevicesBtn" class="btn-small">Discover Devices</button>
+                            <button type="button" id="showPcapDevicesBtn" class="btn-small">Show Pcap Devices</button>
+                        </div>
+                    </div>
+
+                    <div id="discoveredDevices" style="display: none; margin-bottom: 15px;">
+                        <label>Discovered Devices:</label>
+                        <div class="help-text" style="max-height: 250px; overflow-y: auto;">
+                            <div id="devicesList">Scanning...</div>
+                        </div>
+                    </div>
+
+                    <div id="layer2Config" class="grid-2" style="display: none;">
+                        <div class="form-group">
+                            <label for="target_mac">Target MAC Address:</label>
+                            <input type="text" id="target_mac" name="target_mac" placeholder="aa:bb:cc:dd:ee:ff" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
                         </div>
                     </div>
 
