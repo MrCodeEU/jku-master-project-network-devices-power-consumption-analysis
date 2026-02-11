@@ -1,12 +1,44 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 
-\cleardoubleoddpage%  Make sure to start each chapter on a new odd page
-\chapter{Conclusion and Outlook}
+%%
+\section{Conclusion and Outlook}
 \label{sec:conclusion}
 
-Space for your summary, central conclusions, and an outlook on potential future work.
+\todo{Expand this section once all tests are completed.}
 
+\subsection{Summary of Findings}
 
+This work presented a custom-built, open-source test framework for automated power consumption measurement of consumer network devices.
+Using a DECT~200 smart plug for power metering and a Go-based load generator with a web-based analysis dashboard, we conducted the first of several planned test campaigns: an incremental port load test across four consumer-grade devices (Fritzbox~7530, Huawei~EG8245W5-8T, Asus~RT-AX68U, and Alcatel~HH40V).
 
-%% 
+Key findings from Test~1 include:
+\begin{itemize}
+    \item \textbf{RQ1 (Port Count):} All devices show measurable power increases under load (6--16\% above idle), but the per-port increment is small (30--175\,mW per port). CPU-limited devices (Fritzbox) can show non-monotonic power profiles.
+    \item \textbf{RQ4 (Idle Power):} Idle power ranges from 1.85\,W (Alcatel) to 8.96\,W (Huawei), translating to €4--€20 annual energy cost at €0.25/kWh.
+    \item \textbf{RQ8 (Rated vs.\ Real):} Under Ethernet-only load, devices reach only 21--40\% of their rated maximum power, suggesting that Wi-Fi radios and other subsystems account for a significant portion of the power budget.
+\end{itemize}
+
+\subsection{Limitations}
+
+\todo{Expand limitations section after completing all tests.}
+
+The current results are subject to several limitations:
+\begin{itemize}
+    \item The DECT~200's $\sim$70\,mW resolution limits precision for fine-grained per-port analysis.
+    \item All traffic targeted the device's CPU (UDP to device IP) rather than exercising the hardware switching fabric.
+    \item Only Ethernet ports were tested; Wi-Fi was not yet exercised.
+\end{itemize}
+
+\subsection{Future Work}
+
+\todo{Update with actual results from remaining tests.}
+
+Four additional test campaigns (Section~\ref{sec:test-setups}) are planned to address the remaining research questions:
+\begin{itemize}
+    \item Test~2: Throughput scaling and link speed comparison (RQ2 + RQ3) --- using the load generator's ramp-step feature at both 1\,Gbps and 100\,Mbps link speeds.
+    \item Test~3: Energy efficiency and extended idle (RQ4 + RQ6) --- 2-hour idle measurements with EEE toggling and a no-cable standby baseline.
+    \item Test~4: Wi-Fi impact and maximum load (RQ5 + RQ7 + RQ8) --- Wi-Fi band/distance/client-type variations, culminating in an all-subsystems-active stress test.
+    \item Test~5: ISP bridge mode comparison (RQ9) --- Huawei standalone vs.\ Huawei bridge + Asus router.
+\end{itemize}
+
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

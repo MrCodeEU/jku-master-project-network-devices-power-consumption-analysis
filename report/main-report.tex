@@ -156,8 +156,13 @@
 \usepackage{subcaption}
 \usepackage{float}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepgfplotslibrary{statistics}
+\usepackage{pgfplotstable}
 \usepackage{minted}
-\usetikzlibrary{fit,shapes,arrows,positioning}
+\usepackage{booktabs}
+\usetikzlibrary{fit,shapes,arrows,positioning,patterns}
 %\usepackage{acronym}
 
 %% 
@@ -262,6 +267,7 @@
 \cleardoubleoddpage
 
 \addsec{Abstract}
+\todo{Rewrite abstract in formal academic style. Add: (1) motivation with EU/global energy stats for always-on networking equipment, (2) mention the custom Go-based measurement webapp, (3) summarize key quantitative findings (e.g., idle power ranges, load deltas), (4) state significance / practical recommendations.}
 This project provides a comprehensive analysis of the power consumption of network devices in home and Small and Medium-sized Enterprise (SME) environments. We investigate how factors such as network load, the number of connected clients, and connection types (Ethernet vs. Wi-Fi) influence energy usage. Using a dedicated testbed with automated data collection, we evaluate the real-world power efficiency of various consumer-grade, ISP-provided, and business-grade devices. The findings can lead to reducing energy consumption with more energy-efficient network devices and configurations.
 
 %% 
@@ -277,6 +283,7 @@ This project provides a comprehensive analysis of the power consumption of netwo
 
 \section{Introduction}
 \label{sec:introduction}
+\todo{Polish introduction prose. Add: opening paragraph with global energy context (cite IEA/EU stats on ICT energy), narrow down to home/SME CPE devices specifically, clearly state the gap (lack of independent, reproducible measurements), state contribution (custom automated test framework + systematic multi-device analysis), brief outline of report structure.}
 
 This project aims to analyze the power consumption of various network devices commonly used in home and small-to-medium enterprise (SME) environments. The equipment under investigation ranges from consumer-grade home routers to ISP-provided devices and business-grade switches and access points. The goal is to create a comprehensive overview of power consumption across different scenarios and usage patterns.
 
@@ -287,17 +294,29 @@ With this data, we can evaluate the efficiency of these devices under different 
 
 \section{Research Questions}
 \label{sec:research-questions}
-\begin{itemize}
-    \item How does power consumption change with the number of active Ethernet ports? 
-    \item Is there a measurable difference between 100 Mbps and 1 Gbps connections, in different load scenarios?
-    \item How does power consumption scale with network load (idle, 50\%, 100\% utilization of bandwidth)?
-    \item Which equipment is suitable for continuous operation and which devices have high idle consumption that makes them candidates for automated shutdown during off-peak hours?
-    \item How does power consumption per client differ between Ethernet and Wi-Fi connections? Is there a threshold where Wi-Fi becomes more efficient on a per-client basis?
-    \item What is the actual impact of power-saving modes on overall power consumption?
-    \item Does the type of connected device (smartphone, laptop, IoT device) or the wireless signal strength (distance to access point) affect power consumption?
-    \item Does a device's maximum power consumption rating correlate with its real-world power usage under typical operating conditions, and what does it take to reach that level?
-    \item How efficient is ISP-provided equipment (e.g., Energie AG Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment? (Maybe remove this question?)
-\end{itemize}
+\todo{Consider restructuring RQs into primary (RQ1--RQ3) and secondary (RQ4--RQ9) groups. Add a brief introductory paragraph explaining how these RQs were derived.}
+The following research questions guide this investigation:
+\begin{enumerate}
+    \item[\textbf{RQ1}] How does power consumption change with the number of active Ethernet ports?
+    \label{rq:ports}
+    \item[\textbf{RQ2}] Is there a measurable difference between 100\,Mbps and 1\,Gbps connections, in different load scenarios?
+    \label{rq:speed}
+    \item[\textbf{RQ3}] How does power consumption scale with network load (idle, 50\%, 100\% utilization of bandwidth)?
+    \label{rq:load-scaling}
+    \item[\textbf{RQ4}] Which equipment is suitable for continuous operation and which devices have high idle consumption that makes them candidates for automated shutdown during off-peak hours?
+    \label{rq:idle-suitability}
+    \item[\textbf{RQ5}] How does power consumption per client differ between Ethernet and Wi-Fi connections? Is there a threshold where Wi-Fi becomes more efficient on a per-client basis?
+    \label{rq:eth-vs-wifi}
+    \item[\textbf{RQ6}] What is the actual impact of power-saving modes on overall power consumption?
+    \label{rq:power-saving}
+    \item[\textbf{RQ7}] Does the type of connected device (smartphone, laptop, IoT device) or the wireless signal strength (distance to access point) affect power consumption?
+    \label{rq:device-type}
+    \item[\textbf{RQ8}] Does a device's maximum power consumption rating correlate with its real-world power usage under typical operating conditions, and what does it take to reach that level?
+    \label{rq:rated-vs-real}
+    \item[\textbf{RQ9}] How efficient is ISP-provided equipment (e.g., Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment?
+    \label{rq:bridge-mode}
+    \todo{Decide whether to keep RQ9 or merge with RQ4.}
+\end{enumerate}
 
 \section{Setup}
 \label{sec:setup}
@@ -369,13 +388,34 @@ With this data, we can evaluate the efficiency of these devices under different 
     Maybe even a Web UI where one can directly annotate the data for manual testing. Like click button to start and enter Text of test e.g. Connect 5 LAN cables. And then click stop to end the test and maybe also directly export the data and or screenshots of the graphs.
 
     \subsection{Automating Testing and Data Collection}
-    I created a webapp with a go backend and a javascript frontend to automate the testing and data collection.
-    The webapp allows to configure different test scenarios with different devices under test, load generation options and network interface configurations.
-    The source is available at github.com/MrCodeEU/jku-master-project-network-devices-power-consumption-analysis
-    I tried different load generation ideas. First TCP which did not work as mostly rejected by the devices then i tried UDP flooding which worked better. That allows to generate high load on the devices under test. For example the Huawei Modem i was able to reach 3,85 Gigabit/s of UDP traffic which is close to the max of 4 Gbit/s of the 4x1GbE ports combined.
-    But since i was not sure if UDP flooding would necessarily be the best option i also tried to generate layer 2 traffic but in windows i was only able to generate around 550-600 Mbit/s of layer 2 traffic. So i will stick to UDP flooding for now as it allows to generate higher load on the devices under test.
+    \label{sec:automation}
+    \todo{Polish prose into formal academic style throughout this subsection.}
+    To enable reproducible, automated measurements, we developed a custom web application with a Go backend and a JavaScript frontend.
+    The source code is available at \texttt{github.com/MrCodeEU/jku-master-project-network-devices-power-consumption-analysis}.
 
-    While i also tried iperf2 on the fritzbox the other devices do not support that so i will cannot use that.
+    \subsubsection{Architecture Overview}
+    The application consists of several components:
+    \begin{description}
+        \item[Test Runner (\texttt{runner.go})] Orchestrates test execution in three phases: pre-test baseline, load test (with per-interface ramping), and post-test baseline. Each phase duration, interface activation order, and ramp steps are configurable via the web UI.
+        \item[Load Generator (\texttt{loadgen.go})] Generates network traffic via UDP flooding, TCP connections, or raw Layer~2 Ethernet frames. Per-interface rate limiting is implemented using a spin-wait loop with nanosecond precision. The generator supports configurable packet sizes, worker counts per interface, and target throughput levels.
+        \item[Power Meter Interface (\texttt{fritzbox.go})] Reads real-time power consumption from a FritzBox DECT~200 smart plug via the TR-064 SOAP API, using the \texttt{gofritz} library. A separate FritzBox (not the device under test) is used for data collection to avoid measurement interference.
+        \item[Web Server (\texttt{server.go})] Exposes a REST API and serves the frontend. Real-time data streaming to the browser uses Server-Sent Events (SSE). Test results are persisted in an SQLite database with full configuration, time-series data, and computed per-phase statistics.
+        \item[Analysis Dashboard (\texttt{analysis.js})] A client-side analysis page that loads test data from the database or imported CSV files. It computes per-phase statistics (average, standard deviation, min/max power and throughput, efficiency in Mbps/W) and renders interactive Chart.js visualizations. Export options include CSV, Excel, and pgfplots-compatible formats for direct use in \LaTeX\ reports.
+    \end{description}
+
+    \subsubsection{Load Generation Approach}
+    \todo{Add a table comparing TCP vs UDP vs Layer~2 performance.}
+    We evaluated three traffic generation methods:
+    \begin{itemize}
+        \item \textbf{TCP}: Largely rejected by devices under test; achieved only 60--80\,Mbps as most consumer routers drop or rate-limit unsolicited TCP connections to their management interface.
+        \item \textbf{UDP flooding}: The primary method used. Achieves near line-rate throughput (e.g., 3.85\,Gbps aggregate on the Huawei EG8245W5-8T across 4$\times$1\,GbE ports). Uses 1400-byte packets with 16 workers per interface and batched sending (10 packets per sleep cycle).
+        \item \textbf{Layer~2 raw frames}: Implemented via \texttt{libpcap} for direct Ethernet frame injection. On Windows, throughput was limited to approximately 550--600\,Mbps due to OS-level packet scheduling constraints.
+    \end{itemize}
+    UDP flooding was selected as the primary load generation method due to its ability to saturate gigabit links reliably across all tested devices.
+
+    \subsubsection{Power Meter Polling Rate}
+    The FritzBox DECT~200 smart plug natively updates its power reading only approximately once every two minutes, which is insufficient for capturing transient power behavior. To increase the effective polling rate, a Home Assistant automation was employed that sends a ``turn on'' command to the already-on smart plug every 15 seconds. This triggers the DECT~200 to refresh its power reading, achieving an effective polling interval of approximately 15 seconds. The test application then queries the updated value via TR-064 every 5 seconds.
+    \todo{Add citation for TR-064 protocol specification and gofritz library.}
 
 \input{04-test-setup}
 
@@ -393,7 +433,7 @@ With this data, we can evaluate the efficiency of these devices under different 
 \printbibliography
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+\newpage
 %% Begin with the appendix part (all further sections will be appendices)
 \appendix
 

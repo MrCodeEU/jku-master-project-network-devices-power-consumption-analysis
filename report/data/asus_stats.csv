@@ -1,0 +1,7 @@
+Phase,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,AvgThroughputMbps,StdDevThroughputMbps,DurationSeconds,DataPoints,EfficiencyMbpsPerW
+Pre-Test Baseline,8226.4,83.2,8150.0,8360.0,0.0,0.0,595,120,0.00
+Ethernet,8726.2,94.4,8220.0,9150.0,954.9,0.4,1190,239,109.43
+Ethernet 5,8806.2,77.0,8650.0,9220.0,1906.3,63.2,1195,240,216.47
+Ethernet 6,8851.5,63.4,8790.0,9080.0,2859.9,67.7,1195,240,323.09
+Ethernet 7,8932.8,43.9,8790.0,9010.0,3815.5,62.1,1200,241,427.14
+Post-Test Baseline,8256.9,113.2,8150.0,9010.0,0.0,0.0,1195,240,0.00

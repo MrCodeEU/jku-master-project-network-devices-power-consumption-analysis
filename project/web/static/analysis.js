@@ -19,6 +19,7 @@ function initializeEventListeners() {
     document.getElementById('searchTests')?.addEventListener('input', handleSearchTests);
     document.getElementById('loadSelectedTestBtn').addEventListener('click', loadSelectedTest);
     document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+    document.getElementById('exportPgfplotsBtn').addEventListener('click', exportForPgfplots);
     document.getElementById('resetZoomBtn')?.addEventListener('click', resetAllZoom);
 
     // CSV file input
@@ -1302,4 +1303,129 @@ async function exportToExcel() {
         console.error('Error exporting to Excel:', err);
         alert(`Error exporting to Excel: ${err.message}`);
     }
+}
+
+// ============================================================================
+// pgfplots Export: produces clean CSVs for LaTeX pgfplots \addplot table
+// ============================================================================
+
+function exportForPgfplots() {
+    if (!currentTestData || !currentTestData.dataPoints) {
+        alert('No data to export');
+        return;
+    }
+
+    const dataPoints = currentTestData.dataPoints;
+    const stats = calculateAdvancedStatistics(dataPoints);
+    const safeName = (currentTestData.deviceName || currentTestData.testName || 'device')
+        .replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    // --- 1) Main time-series data CSV ---
+    // Columns: ElapsedSeconds, PowerMW, ThroughputTotalMbps, Phase
+    // No comment headers, no spaces in column names — directly usable by pgfplots
+    const dataHeader = 'ElapsedSeconds,PowerMW,ThroughputTotalMbps,Phase';
+    const dataRows = dataPoints.map(dp => {
+        const elapsed = dp.elapsed_seconds || 0;
+        const power = dp.power_mw || 0;
+        const throughput = dp.throughput_mbps || 0;
+        const phase = (dp.phase || 'unknown').replace(/,/g, ';');
+        return `${elapsed},${power},${throughput},${phase}`;
+    });
+    const dataCsv = dataHeader + '\n' + dataRows.join('\n') + '\n';
+
+    // --- 2) Per-phase statistics CSV ---
+    // Columns: Phase, AvgPowerMW, StdDevPowerMW, MinPowerMW, MaxPowerMW,
+    //          AvgThroughputMbps, StdDevThroughputMbps, DurationSeconds, DataPoints, EfficiencyMbpsPerW
+    const statsHeader = 'Phase,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,AvgThroughputMbps,StdDevThroughputMbps,DurationSeconds,DataPoints,EfficiencyMbpsPerW';
+    const statsRows = [];
+    const phaseKeys = Object.keys(stats.phaseStats);
+    phaseKeys.forEach(phase => {
+        const ps = stats.phaseStats[phase];
+        const phaseName = phase.replace(/,/g, ';');
+        statsRows.push([
+            phaseName,
+            ps.avgPower.toFixed(1),
+            ps.powerStdDev.toFixed(1),
+            ps.minPower.toFixed(1),
+            ps.maxPower.toFixed(1),
+            ps.avgThroughput.toFixed(1),
+            ps.throughputStdDev.toFixed(1),
+            ps.duration.toFixed(0),
+            ps.count,
+            ps.efficiency.toFixed(2)
+        ].join(','));
+    });
+    const statsCsv = statsHeader + '\n' + statsRows.join('\n') + '\n';
+
+    // --- 3) Phase boundaries CSV (for pgfplots vertical lines / annotations) ---
+    // Columns: PhaseStartSeconds, PhaseName
+    const boundaryHeader = 'PhaseStartSeconds,PhaseName';
+    const boundaryRows = [];
+    if (stats.markerPhases && stats.markerPhases.length > 0) {
+        stats.markerPhases.forEach(mp => {
+            boundaryRows.push(`${mp.startTime},${mp.name.replace(/,/g, ';')}`);
+        });
+    } else {
+        // Fallback: detect from phase field transitions
+        let lastPhase = null;
+        dataPoints.forEach(dp => {
+            const phase = dp.phase || 'unknown';
+            if (phase !== lastPhase) {
+                boundaryRows.push(`${dp.elapsed_seconds || 0},${phase}`);
+                lastPhase = phase;
+            }
+        });
+    }
+    const boundaryCsv = boundaryHeader + '\n' + boundaryRows.join('\n') + '\n';
+
+    // --- 4) Per-interface throughput CSV (for stacked / multi-line charts) ---
+    // Collect all unique interface names from throughput_by_interface
+    const ifaceNames = new Set();
+    dataPoints.forEach(dp => {
+        if (dp.throughput_by_interface) {
+            Object.keys(dp.throughput_by_interface).forEach(k => ifaceNames.add(k));
+        }
+    });
+    const sortedIfaces = Array.from(ifaceNames).sort();
+
+    let ifaceCsv = '';
+    if (sortedIfaces.length > 0) {
+        const ifaceSafeNames = sortedIfaces.map(n => n.replace(/\s+/g, '_').replace(/,/g, ''));
+        const ifaceHeader = 'ElapsedSeconds,' + ifaceSafeNames.map(n => 'Throughput_' + n + '_Mbps').join(',');
+        const ifaceRows = dataPoints.map(dp => {
+            const elapsed = dp.elapsed_seconds || 0;
+            const vals = sortedIfaces.map(iface => {
+                if (dp.throughput_by_interface && dp.throughput_by_interface[iface] !== undefined) {
+                    return dp.throughput_by_interface[iface].toFixed(1);
+                }
+                return '0';
+            });
+            return elapsed + ',' + vals.join(',');
+        });
+        ifaceCsv = ifaceHeader + '\n' + ifaceRows.join('\n') + '\n';
+    }
+
+    // --- Download as a ZIP-like bundle: create individual downloads ---
+    downloadTextFile(`${safeName}_data.csv`, dataCsv);
+
+    // Small delay between downloads so browser doesn't block them
+    setTimeout(() => downloadTextFile(`${safeName}_stats.csv`, statsCsv), 200);
+    setTimeout(() => downloadTextFile(`${safeName}_phases.csv`, boundaryCsv), 400);
+    if (ifaceCsv) {
+        setTimeout(() => downloadTextFile(`${safeName}_interfaces.csv`, ifaceCsv), 600);
+    }
+
+    setTimeout(() => {
+        alert(`pgfplots export complete!\n\nFiles exported:\n• ${safeName}_data.csv (time-series)\n• ${safeName}_stats.csv (per-phase stats)\n• ${safeName}_phases.csv (phase boundaries)\n${ifaceCsv ? '• ' + safeName + '_interfaces.csv (per-interface throughput)\n' : ''}\nPlace these in report/data/ for use with \\addplot table[col sep=comma]{data/${safeName}_data.csv}`);
+    }, ifaceCsv ? 800 : 600);
+}
+
+function downloadTextFile(filename, content) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
 }
