@@ -187,6 +187,14 @@
 %% Command \title{title}: sets the title of your report
 \title{Analysis of Power Consumption of Home and SME Network Devices}
 
+%% Set PDF metadata for standards compliance
+\hypersetup{
+    pdftitle={Analysis of Power Consumption of Home and SME Network Devices},
+    pdfauthor={Michael Reinegger},
+    pdfsubject={Technical Report - Master Project},
+    pdfkeywords={Power Consumption, Network Devices, Home Router, SME Equipment, Energy Efficiency}
+}
+
 %% Command \titleshort{short title}: sets an abbreviated version of the report title for page heads
 %\titleshort{Optional space for your abbreviated title}
 
@@ -247,6 +255,7 @@
 \cleardoubleoddpage
 %% Print the table of contents
 \setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}  % Show up to subsections in TOC (section=1, subsection=2, subsubsection=3)
 \tableofcontents
 
 %% Make sure to start the list of acronyms on a new odd page (odd is only relevant in twoside layout)

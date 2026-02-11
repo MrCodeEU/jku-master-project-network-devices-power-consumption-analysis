@@ -217,8 +217,8 @@ Figure~\ref{fig:test3_configurations} illustrates the three configuration varian
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[
-        box/.style={rectangle, draw, minimum width=2.2cm, minimum height=0.9cm, text centered, font=\scriptsize, align=center},
+    \begin{tikzpicture}[scale=0.84, transform shape,
+        box/.style={rectangle, draw, minimum width=2.0cm, minimum height=0.9cm, text centered, font=\scriptsize, align=center},
         dut/.style={box, fill=yellow!20, thick},
         cable/.style={->, thick, blue},
         nocable/.style={->, thick, red, dashed},
@@ -304,8 +304,8 @@ Figure~\ref{fig:test4_wifi_topology} shows the physical setup for Runs~A--D (Wi-
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[
-        box/.style={rectangle, draw, minimum width=2.5cm, minimum height=1.1cm, text centered, font=\small, align=center, rounded corners=2pt},
+    \begin{tikzpicture}[scale=0.81, transform shape,
+        box/.style={rectangle, draw, minimum width=2.3cm, minimum height=1.0cm, text centered, font=\small, align=center, rounded corners=2pt},
         dut/.style={box, fill=yellow!20, thick},
         wifi/.style={decorate, decoration={snake, amplitude=0.4mm, segment length=2mm, post length=1mm}, thick, blue},
         eth/.style={->, >=stealth, thick, green!60!black},
@@ -404,16 +404,16 @@ Figure~\ref{fig:test5_bridge_topology} compares the two configurations.
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[
-        box/.style={rectangle, draw, minimum width=2.5cm, minimum height=1.2cm, text centered, font=\small, align=center, rounded corners=2pt},
+    \begin{tikzpicture}[scale=0.79, transform shape,
+        box/.style={rectangle, draw, minimum width=2.3cm, minimum height=1.1cm, text centered, font=\small, align=center, rounded corners=2pt},
         router/.style={box, fill=blue!15, thick},
         bridge/.style={box, fill=orange!15, thick},
         meter/.style={box, fill=gray!10},
     ]
         % Configuration A - Standalone
         \node[font=\bfseries] at (0, 5) {Configuration A: Standalone};
-        \node[router] (huawei_a) at (0, 3) {Huawei\\EG8245W5-8T\\[1pt]{\scriptsize Router Mode}};
-        \node[box] (pc_a) at (0, 0.5) {Test PC\\[1pt]{\scriptsize 1--4 ports}};
+        \node[router] (huawei_a) at (0, 3) {Huawei\\EG8245W5-8T\\\scriptsize Router Mode};
+        \node[box] (pc_a) at (0, 0.5) {Test PC\\\scriptsize 1--4 ports};
         \node[meter] (meter_a) at (-3.5, 3) {DECT~200};
         \draw[->, thick] (meter_a) -- (huawei_a);
         \draw[->, very thick, blue] (pc_a) -- node[right, font=\scriptsize] {UDP} (huawei_a);
@@ -421,12 +421,12 @@ Figure~\ref{fig:test5_bridge_topology} compares the two configurations.
         
         % Configuration B - Bridge Mode
         \node[font=\bfseries] at (8.5, 5) {Configuration B: Bridge + Router};
-        \node[bridge] (huawei_b) at (8.5, 3.5) {Huawei\\[1pt]{\scriptsize Bridge Mode}};
-        \node[router] (asus_b) at (8.5, 1.5) {Asus\\RT-AX68U\\[1pt]{\scriptsize Router}};
-        \node[box] (pc_b) at (8.5, -1) {Test PC\\[1pt]{\scriptsize 1--4 ports}};
-        \node[meter] (meter_b1) at (5.5, 3.5) {DECT~200\\[1pt](option a)};
-        \node[meter] (meter_b2) at (5.5, 1.5) {DECT~200\\[1pt](option a)};
-        \node[meter] (meter_b_shared) at (11.5, 2.5) {DECT~200\\[1pt]{\scriptsize option b:\\via strip}};
+        \node[bridge] (huawei_b) at (8.5, 3.5) {Huawei\\\scriptsize Bridge Mode};
+        \node[router] (asus_b) at (8.5, 1.5) {Asus\\RT-AX68U\\\scriptsize Router};
+        \node[box] (pc_b) at (8.5, -1) {Test PC\\\scriptsize 1--4 ports};
+        \node[meter] (meter_b1) at (5.5, 3.5) {DECT~200\\(option a)};
+        \node[meter] (meter_b2) at (5.5, 1.5) {DECT~200\\(option a)};
+        \node[meter] (meter_b_shared) at (11.5, 2.5) {DECT~200\\\scriptsize option b:\\via strip};
         
         \draw[->, thick] (meter_b1) -- (huawei_b);
         \draw[->, thick] (meter_b2) -- (asus_b);
