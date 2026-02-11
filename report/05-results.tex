@@ -1,0 +1,66 @@
+\section{First real test results}
+\label{sec:first-real-test-results}
+    I have run the first test where i first run 10 minutes of idle measurement and then 20 minutes of may load on one port then 20 minutes of max load on two ports then 20 minutes of max load on three ports and finally 20 minutes of max load on four ports.
+    The test was run for all 4 devices, however the Alcatel HH40V only has 2 ports so for that device the last two tests with 3 and 4 ports were skipped.
+    Next i will analyze the collected data and create plots to visualize the power consumption for each device under the different load scenarios.
+
+    Interesting data to look at include things like: idle power consumption, power consumption under load for different number of active ports, power consumption increase per additional active port, efficiency under load (power consumption per Gbit/s) and also very important the max throughput that could be achieved for each device under test.
+    For example the fritzbox only achieved a bit under 3 gigabit under full 4 gigabit load. I expect this is due to the limited CPU power of the fritzbox. As compared to the Huawei EG8245W5-8T that was able to achieve the nearly the full 4 gigabit throughput under load.
+    As for the Asus RT-AX68U it was also able to achieve nearly the full 4 gigabit throughput under load As for thge Alcatel HH40V it was only able to achieve around 190 megabit/s with both ports which is expected as it only has two 100 megabit/s ports.
+
+    Here are the initial data analysis and plots for each device, created by my data analysis webapp (also int the github repo mentioned above): \todo{Make the webapp generate the plots as latex? or exportable as images and tables?}
+    % image for Fritzbox 7530
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/fritzbox.png}
+        \caption{Fritzbox 7530 First Test Results}
+        \label{fig:fritzbox_results}
+    \end{figure}
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/fritzbox2.png}
+        \caption{Fritzbox 7530 First Test Results}
+        \label{fig:fritzbox_results}
+    \end{figure}
+
+    % image for Asus RT-AX68U
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/asus.png}
+        \caption{Asus RT-AX68U First Test Results}
+        \label{fig:asus_results}
+    \end{figure}
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/asus2.png}
+        \caption{Asus RT-AX68U First Test Results}
+        \label{fig:asus_results}
+    \end{figure}
+    % image for Alcatel HH40V
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/alcatel.png}
+        \caption{Alcatel HH40V First Test Results}
+        \label{fig:alcatel_results}
+    \end{figure}
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/alcatel2.png}
+        \caption{Alcatel HH40V First Test Results}
+        \label{fig:alcatel_results}
+    \end{figure}
+    % image for Huawei EG8245W5-8T
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/huawei.png}
+        \caption{Huawei EG8245W5-8T First Test Results}
+        \label{fig:huawei_results}
+    \end{figure}
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{images/huawei2.png}
+        \caption{Huawei EG8245W5-8T First Test Results}
+        \label{fig:huawei_results}
+    \end{figure}
+    
+    This concludes my progress since the last update. Next steps are to update the test setups and run the other tests and also improve the data analysis and visualization. After that writing the final report.

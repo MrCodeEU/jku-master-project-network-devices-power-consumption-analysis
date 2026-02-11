@@ -1,0 +1,19 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{+w}{        }\PYG{n+nt}{alias}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{Automation \PYGZhy{} Nudge FritzDECT Smart Plug}
+\PYG{+w}{        }\PYG{n+nt}{description}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}\PYGZdq{}}
+\PYG{+w}{        }\PYG{n+nt}{triggers}\PYG{p}{:}
+\PYG{+w}{        }\PYG{p+pIndicator}{\PYGZhy{}}\PYG{+w}{ }\PYG{n+nt}{trigger}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{time\PYGZus{}pattern}
+\PYG{+w}{            }\PYG{l+lScalar+lScalarPlain}{seconds}\PYG{p+pIndicator}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{/15}
+\PYG{+w}{        }\PYG{n+nt}{conditions}\PYG{p}{:}
+\PYG{+w}{        }\PYG{p+pIndicator}{\PYGZhy{}}\PYG{+w}{ }\PYG{n+nt}{condition}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{state}
+\PYG{+w}{            }\PYG{l+lScalar+lScalarPlain}{entity\PYGZus{}id}\PYG{p+pIndicator}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{switch.fritz\PYGZus{}dect\PYGZus{}200}
+\PYG{+w}{            }\PYG{l+lScalar+lScalarPlain}{state}\PYG{p+pIndicator}{:}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}on\PYGZdq{}}
+\PYG{+w}{        }\PYG{p+pIndicator}{\PYGZhy{}}\PYG{+w}{ }\PYG{n+nt}{condition}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{time}
+\PYG{+w}{            }\PYG{l+lScalar+lScalarPlain}{after}\PYG{p+pIndicator}{:}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}06:30:00\PYGZdq{}}
+\PYG{+w}{            }\PYG{n+nt}{before}\PYG{p}{:}\PYG{+w}{ }\PYG{l+s}{\PYGZdq{}23:59:00\PYGZdq{}}
+\PYG{+w}{        }\PYG{n+nt}{actions}\PYG{p}{:}
+\PYG{+w}{        }\PYG{p+pIndicator}{\PYGZhy{}}\PYG{+w}{ }\PYG{n+nt}{action}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{switch.turn\PYGZus{}on}
+\PYG{+w}{            }\PYG{l+lScalar+lScalarPlain}{target}\PYG{p+pIndicator}{:}
+\PYG{+w}{            }\PYG{n+nt}{entity\PYGZus{}id}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{switch.fritz\PYGZus{}dect\PYGZus{}200}
+\PYG{+w}{        }\PYG{n+nt}{mode}\PYG{p}{:}\PYG{+w}{ }\PYG{l+lScalar+lScalarPlain}{single}
+\end{Verbatim}
