@@ -33,6 +33,16 @@ New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 192.168.18.4 -PrefixLen
 New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.18.5 -PrefixLength 16
 New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.18.6 -PrefixLength 16
 
+## for asus modem
+New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 192.168.51.3 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 192.168.51.4 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.51.5 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.51.6 -PrefixLength 16
+
+## for alcatel modem
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.1.3 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.1.4 -PrefixLength 16
+
 ### static routing (is this necessarly?)
 New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 5" -NextHop "0.0.0.0" -RouteMetric 2
 New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 7" -NextHop "0.0.0.0" -RouteMetric 3
