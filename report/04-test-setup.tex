@@ -14,7 +14,7 @@ Each test setup specifies the devices under test, physical topology, traffic gen
 % ---------------------------------------------------------------------------
 
 This test investigates how power consumption changes as Ethernet ports are incrementally loaded with maximum UDP traffic.
-It directly addresses \textbf{RQ1} (power vs.\ number of active ports) and provides partial data for \textbf{RQ4} (idle power suitability for continuous operation) and \textbf{RQ8} (rated vs.\ real-world maximum power).
+It directly addresses \textbf{RQ1} (power vs.\ number of active ports) and provides partial data for \textbf{RQ4} (idle power suitability for continuous operation) and \textbf{RQ7} (rated vs.\ real-world maximum power).
 
 \subsubsection{Devices Under Test}
 Four devices were tested, representing a range of consumer and ISP-provided equipment:
@@ -96,23 +96,27 @@ Each device was tested using the following automated protocol, executed by the c
 \begin{description}
     \item[RQ1 (Fully addressed):] The test directly measures power at 0, 1, 2, 3, and 4 active loaded ports, providing a complete port-count vs.\ power profile for each device.
     \item[RQ4 (Partially addressed):] The 10-minute pre-test baseline provides idle power measurements (with cables connected) for all four devices, enabling an idle power comparison and annual energy cost estimation. A full 24-hour idle measurement is not captured.
-    \item[RQ8 (Partially addressed):] By comparing the maximum observed power under full Ethernet load to the manufacturer's rated maximum, we can assess how close real-world usage comes to the rated specification. This test does not activate Wi-Fi or USB peripherals, so the absolute maximum is not reached.
+    \item[RQ7 (Partially addressed):] By comparing the maximum observed power under full Ethernet load to the manufacturer's rated maximum, we can assess how close real-world usage comes to the rated specification. This test does not activate Wi-Fi or USB peripherals, so the absolute maximum is not reached.
 \end{description}
 
 % ---------------------------------------------------------------------------
-\subsection{Test~2: Throughput Scaling and Link Speed (Planned)}
+\subsection{Test~2: Throughput Scaling (Single Port)}
 \label{sec:test-throughput-scaling}
 % ---------------------------------------------------------------------------
 
-This test combines two research questions into a single measurement campaign by varying both throughput level and link speed on a single Ethernet port.
-It directly addresses \textbf{RQ2} (100\,Mbps vs.\ 1\,Gbps) and \textbf{RQ3} (power vs.\ throughput at intermediate load levels).
+This test measures how power consumption scales with network throughput on a single Ethernet port.
+It directly addresses \textbf{RQ2} (per-port idle overhead) and \textbf{RQ3} (power vs.\ throughput at intermediate load levels).
+By comparing the single-cable idle power of this test with the four-cable idle power of Test~1, the per-port power overhead is quantified.
 
 \subsubsection{Devices Under Test}
-All four devices from Test~1. The Alcatel~HH40V (100\,Mbps ports) participates only in Run~B.
+All four devices from Test~1.
+The three GbE devices (Fritzbox~7530, Huawei~EG8245W5, Asus~RT-AX68U) are tested with a 1\,Gbps link and target throughput up to 1000\,Mbps.
+The Alcatel~HH40V (100\,Mbps ports) is tested with its native link speed and a target of 100\,Mbps.
 
 \subsubsection{Physical Topology}
-The physical topology is identical to Test~1 (Figure~\ref{fig:test1_topology}): single Ethernet cable from test PC to DUT, power measured via DECT~200.
-Figure~\ref{fig:test2_ramp_profile} shows the expected throughput profile for the ramp-step load generation.
+The physical topology is identical to Test~1 (Figure~\ref{fig:test1_topology}), but with only a \emph{single} Ethernet cable from the test PC to the DUT.
+Power is measured via the DECT~200 smart plug.
+Figure~\ref{fig:test2_ramp_profile} shows the throughput profile for the ramp-step load generation.
 
 \begin{figure}[H]
     \centering
@@ -122,280 +126,285 @@ Figure~\ref{fig:test2_ramp_profile} shows the expected throughput profile for th
             height=5.5cm,
             xlabel={Elapsed Time (min)},
             ylabel={Target Throughput (Mbps)},
-            xmin=0, xmax=100,
+            xmin=0, xmax=35,
             ymin=0, ymax=1100,
             grid=major,
             grid style={gray!20},
-            title={Test~2 Throughput Profile --- Run~A (1\,Gbps Link)},
+            title={Test~2 Throughput Profile (1\,Gbps devices)},
             legend pos=north west,
             legend style={font=\small},
         ]
             % Pre-test
-            \addplot[blue, thick] coordinates {(0,0) (10,0)};
-            \addlegendentry{Pre-test}
+            \addplot[blue, thick] coordinates {(0,0) (5,0)};
+            \addlegendentry{Pre-test (5\,min)}
             % Ramp steps
-            \addplot[red, thick] coordinates {(10,250) (30,250) (30,500) (50,500) (50,750) (70,750) (70,1000) (90,1000)};
+            \addplot[red, thick] coordinates {(5,250) (10,250) (10,500) (15,500) (15,750) (20,750) (20,1000) (30,1000)};
             \addlegendentry{Load (4-step ramp)}
             % Post-test
-            \addplot[blue, thick] coordinates {(90,0) (100,0)};
-            \addlegendentry{Post-test}
+            \addplot[blue, thick] coordinates {(30,0) (35,0)};
+            \addlegendentry{Post-test (5\,min)}
             
             % Annotations
-            \node[font=\scriptsize, anchor=south] at (axis cs:20,250) {Step 1: 250\,Mbps};
-            \node[font=\scriptsize, anchor=south] at (axis cs:40,500) {Step 2: 500\,Mbps};
-            \node[font=\scriptsize, anchor=south] at (axis cs:60,750) {Step 3: 750\,Mbps};
-            \node[font=\scriptsize, anchor=south] at (axis cs:80,1000) {Step 4: 1000\,Mbps};
+            \node[font=\scriptsize, anchor=south] at (axis cs:7.5,270) {250};
+            \node[font=\scriptsize, anchor=south] at (axis cs:12.5,520) {500};
+            \node[font=\scriptsize, anchor=south] at (axis cs:17.5,770) {750};
+            \node[font=\scriptsize, anchor=south] at (axis cs:25,1020) {1000\,Mbps};
         \end{axis}
     \end{tikzpicture}
-    \caption{Expected throughput profile for Test~2 Run~A. The load generator's ramp-step feature automatically transitions through four equal-duration steps. Run~B uses the same structure with 100\,Mbps maximum (steps at 25, 50, 75, 100\,Mbps).}
+    \caption{Throughput profile for Test~2. The load generator's ramp-step feature automatically transitions through four equal-duration steps at 25\%, 50\%, 75\%, and 100\% of the link capacity. For the Alcatel~HH40V, steps are at 25, 50, 75, and 100\,Mbps.}
     \label{fig:test2_ramp_profile}
 \end{figure}
 
 \subsubsection{Test Protocol}
-The test uses the load generator's built-in \emph{ramp steps} feature, which linearly increases the per-interface rate limit in equal increments.
-Two runs are performed per device:
-
-\paragraph{Run~A --- 1\,Gbps Link:}
+The test uses the load generator's built-in \emph{ramp steps} feature, which linearly increases the per-interface rate limit in equal increments:
 \begin{enumerate}
-    \item \textbf{Pre-test baseline} (10\,min): 1 cable connected, no traffic.
-    \item \textbf{Load phase} (80\,min total): Single port, UDP, \texttt{ramp\_steps=4}, \texttt{target\_mbps=1000}.
+    \item \textbf{Pre-test baseline} (5\,min): 1 cable connected, no traffic.
+    \item \textbf{Load phase} (25\,min total): Single port, UDP, \texttt{ramp\_steps=4}, \texttt{target\_mbps=1000}.
     The load generator automatically steps through:
     \begin{itemize}
-        \item Step~1 (20\,min): $\sim$250\,Mbps (25\% of link capacity)
-        \item Step~2 (20\,min): $\sim$500\,Mbps (50\%)
-        \item Step~3 (20\,min): $\sim$750\,Mbps (75\%)
-        \item Step~4 (20\,min): $\sim$1000\,Mbps (100\%)
+        \item Step~1: $\sim$250\,Mbps (25\% of link capacity)
+        \item Step~2: $\sim$500\,Mbps (50\%)
+        \item Step~3: $\sim$750\,Mbps (75\%)
+        \item Step~4: $\sim$1000\,Mbps (100\%)
     \end{itemize}
-    \item \textbf{Post-test baseline} (10\,min): Traffic stopped, cable remains connected.
+    \item \textbf{Post-test baseline} (5\,min): Traffic stopped, cable remains connected.
 \end{enumerate}
 
-\paragraph{Run~B --- 100\,Mbps Link:}
-Before starting, force the test PC's NIC to 100\,Mbps using Windows Device Manager or PowerShell:
-\begin{verbatim}
-    # PowerShell (run as Administrator):
-    Set-NetAdapterAdvancedProperty -Name "Ethernet" `
-        -DisplayName "Speed & Duplex" -DisplayValue "100 Mbps Full Duplex"
-\end{verbatim}
-Alternatively, use Device Manager $\rightarrow$ Network Adapters $\rightarrow$ Properties $\rightarrow$ Advanced $\rightarrow$ Speed \& Duplex $\rightarrow$ select \texttt{100 Mbps Full Duplex}.
-Then repeat the same structure with \texttt{target\_mbps=100} and \texttt{ramp\_steps=4}, yielding steps at 25, 50, 75, and 100\,Mbps.
-After completion, restore to auto-negotiation (typically 2.5\,Gbps on the Realtek controller):
-\begin{verbatim}
-    Set-NetAdapterAdvancedProperty -Name "Ethernet" `
-        -DisplayName "Speed & Duplex" -DisplayValue "Auto Negotiation"
-\end{verbatim}
-
-\noindent\textbf{Load generation parameters (both runs):}
+\noindent\textbf{Load generation parameters:}
 \begin{itemize}
-    \item Protocol: UDP, packet size: 1400\,bytes, 16 workers
-    \item Single interface enabled, \texttt{ramp\_duration} = 0 (auto, equals test duration)
+    \item Protocol: UDP, packet size: 1400\,bytes, 10 workers
+    \item Single interface enabled, \texttt{ramp\_duration} = 0 (auto, equals load duration)
     \item Target: DUT's own IP address (consistent with Test~1)
     \item Power polling interval: 5\,seconds
 \end{itemize}
 
 \subsubsection{Research Questions Addressed}
 \begin{description}
-    \item[RQ2 (Fully addressed):] Comparing idle power and power at matched throughput levels (e.g., 100\,Mbps via a 1\,GbE link vs.\ 100\,Mbps via a 100\,Mbps link) isolates the PHY-level power cost of the higher link speed.
-    \item[RQ3 (Fully addressed):] The four-step ramp produces a power-vs-throughput curve at 25\%, 50\%, 75\%, and 100\% utilization for each link speed, revealing whether power scales linearly, sub-linearly, or in discrete steps.
+    \item[RQ2 (Fully addressed):] Comparing the single-cable idle power from this test with the four-cable idle power from Test~1 isolates the per-port idle overhead. Additionally, comparing idle power with load-step power reveals whether idle ports or active traffic dominate the power budget.
+    \item[RQ3 (Fully addressed):] The four-step ramp produces a power-vs-throughput curve at 25\%, 50\%, 75\%, and 100\% utilization, revealing whether power scales linearly, sub-linearly, or in discrete steps.
 \end{description}
-\todo{Run this test and fill in results.}
 
 % ---------------------------------------------------------------------------
-\subsection{Test~3: Energy Efficiency and Extended Idle (Planned)}
-\label{sec:test-energy-efficiency}
+\subsection{Test~3: Incremental Subsystem Power Profiling}
+\label{sec:test-subsystem-profiling}
 % ---------------------------------------------------------------------------
 
-This test combines extended idle measurements with Energy-Efficient Ethernet (EEE, IEEE~802.3az) toggling to investigate both continuous-operation suitability and the real-world impact of power-saving features.
-It directly addresses \textbf{RQ4} (idle power suitability) and \textbf{RQ6} (power-saving mode impact).
+This test progressively enables every subsystem of the router---from bare power-on to maximum combined load---to reveal the marginal power cost of each component.
+Rather than a single continuous measurement, the test is divided into six groups of related subsystems, with manual intervention between groups to connect cables, attach peripherals, enable radios, and start load tests.
+Each group is recorded as a separate measurement run using the test application, which are later combined for analysis.
+Two complete runs are performed per device: Run~A with default settings and Run~B with manufacturer-provided power-saving modes enabled.
+
+It directly addresses \textbf{RQ2} (per-port PHY cost), \textbf{RQ4} (idle suitability), \textbf{RQ5} (Wi-Fi radio idle cost), \textbf{RQ6} (power-saving modes), and \textbf{RQ7} (reaching rated maximum).
 
 \subsubsection{Devices Under Test}
-All four devices. EEE support will be verified per-device via \texttt{ethtool --show-eee} on connected ports.
-Devices that do not support EEE will only undergo the extended idle portion.
+All four devices from Test~1.
+The Alcatel~HH40V has limited capabilities (2$\times$100\,Mbps, 2.4\,GHz only, no USB, no 5\,GHz radio) and skips inapplicable groups.
 
 \subsubsection{Physical Topology}
-The physical topology is identical to Test~1 (Figure~\ref{fig:test1_topology}).
-Figure~\ref{fig:test3_configurations} illustrates the three configuration variants.
+The test PC connects via Ethernet (cables are added incrementally during Group~1) and, for devices that allow LAN--Wi-Fi communication, serves as the iperf3 target for Wi-Fi throughput testing.
+Two smartphones act as Wi-Fi clients: one on 2.4\,GHz and one on 5\,GHz.
+For Wi-Fi load in Groups~5 and~6, an Android iperf3 app generates traffic between the two phones through the DUT.
+Power is measured via the DECT~200 smart plug (separate data-collection Fritzbox as in Test~1).
+
+\subsubsection{Group Design}
+
+The test is organised into six groups that cumulatively add subsystems.
+Since Test~4 covers individual Wi-Fi band throughput measurements in detail, this test does not include separate per-band Wi-Fi load phases.
+Individual Ethernet cable additions are retained because Test~1 measures per-port overhead with \emph{all} cables already connected, which does not isolate the PHY link-up cost of each additional cable.
+
+Figure~\ref{fig:test3_phase_diagram} illustrates the group sequence.
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[scale=0.84, transform shape,
-        box/.style={rectangle, draw, minimum width=2.0cm, minimum height=0.9cm, text centered, font=\scriptsize, align=center},
-        dut/.style={box, fill=yellow!20, thick},
-        cable/.style={->, thick, blue},
-        nocable/.style={->, thick, red, dashed},
+    \resizebox{\textwidth}{!}{%
+    \begin{tikzpicture}[
+        grp/.style={rectangle, draw, minimum width=2.2cm, minimum height=1.2cm, font=\tiny, align=center, rounded corners=2pt},
+        idle/.style={grp, fill=blue!15},
+        eth/.style={grp, fill=green!20},
+        usb/.style={grp, fill=yellow!20},
+        wifi/.style={grp, fill=orange!20},
+        client/.style={grp, fill=purple!15},
+        load/.style={grp, fill=red!30},
+        arrow/.style={->, >=stealth, thick, gray},
     ]
-        % Run A - EEE Enabled
-        \node[font=\small\bfseries] at (0, 1.8) {Run A: EEE Enabled};
-        \node[box] (pca) at (-1.5, 0.5) {Test PC\\EEE ON};
-        \node[dut] (duta) at (1.5, 0.5) {DUT\\(4 cables\\connected)};
-        \draw[cable] (pca) -- (duta);
-        \node[font=\tiny, align=left, anchor=west] at (-1.5, -0.5) {2h idle + 20m load\\+ 30m post};
-        
-        % Run B - EEE Disabled
-        \node[font=\small\bfseries] at (5.5, 1.8) {Run B: EEE Disabled};
-        \node[box] (pcb) at (4, 0.5) {Test PC\\EEE OFF};
-        \node[dut] (dutb) at (7, 0.5) {DUT\\(4 cables\\connected)};
-        \draw[cable] (pcb) -- (dutb);
-        \node[font=\tiny, align=left, anchor=west] at (4, -0.5) {Same profile\\as Run A};
-        
-        % Run C - No Cables
-        \node[font=\small\bfseries] at (11, 1.8) {Run C: Standby};
-        \node[box] (pcc) at (9.5, 0.5) {Test PC\\(disconnected)};
-        \node[dut] (dutc) at (12.5, 0.5) {DUT\\(no cables,\\Wi-Fi off)};
-        \draw[nocable] (pcc) -- (dutc);
-        \node[font=\tiny, align=left, anchor=west] at (9.5, -0.5) {2h standby\\(absolute floor)};
-    \end{tikzpicture}
-    \caption{Test~3 configuration variants. Run~A and Run~B use the same physical setup but differ in EEE settings. Run~C disconnects all cables to measure true standby power.}
-    \label{fig:test3_configurations}
+        \node[idle] (g1) at (0,0) {Group~1\\Bare min\\+cables\\one-by-one};
+        \node[usb] (g2) at (3,0) {Group~2\\+USB\\devices};
+        \node[wifi] (g3) at (6,0) {Group~3\\+Wi-Fi\\radios ON};
+        \node[client] (g4) at (9,0) {Group~4\\+Wi-Fi\\clients idle};
+        \node[load] (g5) at (12,0) {Group~5\\Wi-Fi\\load only};
+        \node[load] (g6) at (15,0) {Group~6\\ALL MAX\\Wi-Fi+Eth};
+
+        \foreach \i/\j in {g1/g2, g2/g3, g3/g4, g4/g5, g5/g6} {
+            \draw[arrow] (\i) -- (\j);
+        }
+
+        \node[font=\tiny, anchor=west] at (0, -1.1) {Each group: 2--3\,min measurement (1\,min pre-baseline + 1--2\,min load where applicable) \quad 4 devices $\times$ 2 runs $\approx$ 4\,h};
+    \end{tikzpicture}%
+    }
+    \caption{Test~3 group sequence. Each group adds one category of subsystems cumulatively. Between groups, the tester manually connects cables, attaches peripherals, or enables radios before starting the next measurement. Run~B repeats from Group~3 onwards with power-saving modes enabled.}
+    \label{fig:test3_phase_diagram}
 \end{figure}
 
-\subsubsection{Test Protocol}
-Three runs are performed per device, requiring manual reconfiguration between runs:
+\subsubsection{Test Protocol --- Run~A (Default Settings)}
+Subsystems are added \emph{cumulatively}---nothing is removed between groups.
+Each group is recorded as a separate run by the test application (1\,min pre-test baseline, 1--2\,min measurement at 5\,s polling).
+Manual intervention occurs between groups to modify the physical setup.
 
-\paragraph{Run~A --- EEE Enabled (Default):}
-\begin{enumerate}
-    \item Verify EEE is active: \texttt{ethtool --show-eee ethX} on the test PC.
-    \item \textbf{Extended idle baseline} (2\,hours): All 4 cables connected, no traffic. Captures periodic background activity (DHCP renewal, Wi-Fi beaconing, firmware checks).
-    \item \textbf{Load phase} (20\,min): 1 port, maximum UDP. Establishes a loaded power reference with EEE active.
-    \item \textbf{Post-test recovery} (30\,min): Observe how quickly the device returns to idle power.
-\end{enumerate}
+\begin{description}
+    \item[Group~1 --- Bare Minimum + Ethernet Cables:] The device is powered on with all Wi-Fi radios disabled and no cables connected.
+    After recording the bare-minimum power floor ($\sim$3\,min), Ethernet cables are connected \emph{one at a time} with $\sim$2\,min between each addition.
+    Custom events in the test application mark each cable insertion.
+    This isolates the PHY link-up cost of each individual port.
 
-\paragraph{Run~B --- EEE Disabled:}
-\begin{enumerate}
-    \item Disable EEE on test PC: \texttt{ethtool --set-eee ethX eee off}.
-    \item If DUT exposes EEE settings (e.g., via admin UI), disable there as well.
-    \item Repeat the same profile as Run~A (2\,h idle + 20\,min load + 30\,min post).
-\end{enumerate}
+    \item[Group~2 --- +USB Devices:] With all Ethernet cables still connected, USB storage devices are attached to the DUT's USB port(s) one at a time ($\sim$2\,min each).
+    Measures USB peripheral power overhead.
+    \emph{Skipped for Alcatel (no USB ports).}
 
-\paragraph{Run~C --- Minimal Configuration (No Cables):}
-\begin{enumerate}
-    \item Disconnect all Ethernet cables from the DUT.
-    \item Disable Wi-Fi via the DUT's admin interface (if possible).
-    \item \textbf{Standby measurement} (2\,hours): Measures true standby power with no active interfaces.
-\end{enumerate}
+    \item[Group~3 --- +Wi-Fi Radios ON:] With cables and USB still attached, Wi-Fi radios are enabled via the DUT's webUI.
+    For dual-band devices, the 2.4\,GHz radio is enabled first, followed by the 5\,GHz radio after $\sim$2\,min.
+    No clients are connected; this measures the idle radio power cost.
+    \emph{Alcatel: 2.4\,GHz only. Fritzbox: both radios enable simultaneously (firmware limitation).}
 
-\noindent\textbf{Load generation parameters (Runs~A and B, load phase only):}
+    \item[Group~4 --- +Wi-Fi Clients Connected (Idle):] A smartphone connects to the 2.4\,GHz network and a second smartphone connects to the 5\,GHz network (both idle, no traffic).
+    Measures the power overhead of client association and idle session maintenance.
+    \emph{Alcatel: two 2.4\,GHz clients (no 5\,GHz).}
+
+    \item[Group~5 --- Wi-Fi Load:] An iperf3 flood is started between the two Wi-Fi-connected smartphones using an Android iperf3 app.
+    The test application records power with load generation disabled (Wi-Fi load is external).
+    Wi-Fi throughput is noted manually from the iperf3 app output.
+    This measures the power cost of active Wi-Fi data transfer without Ethernet load.
+
+    \item[Group~6 --- All Subsystems Maximum Load:] The Wi-Fi iperf3 flood continues, and the test application simultaneously starts maximum UDP flooding on all Ethernet ports.
+    This phase represents the closest approximation to the device's rated maximum power, with all subsystems active and under load.
+\end{description}
+
+\subsubsection{Test Protocol --- Run~B (Power-Saving Modes)}
+Run~B repeats Groups~3--6 with manufacturer-provided power-saving modes enabled.
+Since power-saving features primarily affect Wi-Fi transmission power and (for some devices) Ethernet PHY settings, Groups~1--2 (bare minimum, cables, USB) are not repeated; the Run~A data is reused for those groups.
+The following power-saving settings were applied:
 \begin{itemize}
-    \item Protocol: UDP, packet size: 1400\,bytes, 16 workers, single interface
-    \item \texttt{target\_mbps} = 0 (unlimited), no ramp steps
-    \item Power polling interval: 5\,seconds
+    \item \textbf{Fritzbox 7530:} Full eco mode enabled (System $\rightarrow$ Energy Monitor $\rightarrow$ ``Green Mode''), which reduces Ethernet PHY power, Wi-Fi transmission power, and dims LEDs.
+    The Fritzbox eco mode was the only one to affect Ethernet, so a \emph{full} rerun of all groups (1--6) was performed.
+    \item \textbf{Asus RT-AX68U:} Wi-Fi TX power set to the lowest available setting for both bands.
+    \item \textbf{Huawei EG8245W5-8T:} Wi-Fi TX power set to 20\% for both bands.
+    \item \textbf{Alcatel HH40V:} No power-saving features available; Run~B was skipped.
 \end{itemize}
+
+\subsubsection{Alcatel Adaptation}
+The Alcatel (2$\times$100\,Mbps, 2.4\,GHz only, no USB) uses a reduced group sequence:
+Group~1 (bare minimum + 2 cables), Group~3 (2.4\,GHz radio), Group~4 (2.4\,GHz clients), Group~5 (Wi-Fi load), Group~6 (Wi-Fi + Ethernet max load).
+Groups~2 (USB) is skipped entirely.
+
+\subsubsection{Measurement Considerations}
+Because each group is recorded as a separate test run, minor power discontinuities may appear when combining the data across groups.
+These arise from slight environmental variations between consecutive runs (e.g., ambient temperature drift, power supply fluctuations).
+In practice, the observed jumps were small (typically $<$100\,mW) and did not affect the analysis.
 
 \subsubsection{Research Questions Addressed}
 \begin{description}
-    \item[RQ4 (Fully addressed):] The 2-hour idle measurements (with cables, without cables) provide a robust idle power characterization including any periodic background power fluctuations. Combined with the 10-minute baselines from Test~1, this enables confident annual energy cost projections and automated-shutdown recommendations.
-    \item[RQ6 (Fully addressed):] Direct comparison of Run~A (EEE on) vs.\ Run~B (EEE off) at both idle and loaded states quantifies the real-world power savings from IEEE~802.3az. Run~C establishes the absolute floor.
+    \item[RQ2:] Group~1 isolates the per-port PHY link-up cost by adding cables individually, complementing the per-port load data from Test~1.
+    \item[RQ4:] The bare-minimum measurement in Group~1 provides the absolute power floor; subsequent groups characterise various idle configurations for annual energy cost projections.
+    \item[RQ5:] Groups~3--5 isolate the idle cost of Wi-Fi radios, client associations, and active Wi-Fi load. Individual-band throughput measurements are covered in detail by Test~4.
+    \item[RQ6:] Direct comparison of Run~A vs.\ Run~B at each group quantifies savings from manufacturer eco/power-saving modes.
+    \item[RQ7:] Group~6 loads all subsystems simultaneously, providing the closest approximation to the rated maximum power.
 \end{description}
-\todo{Run this test and fill in results.}
 
 % ---------------------------------------------------------------------------
-\subsection{Test~4: Wi-Fi Impact and Maximum Load (Planned)}
-\label{sec:test-wifi}
+\subsection{Test~4: Wi-Fi Signal Strength and Distance}
+\label{sec:test-wifi-distance}
 % ---------------------------------------------------------------------------
 
-This test investigates the power cost of Wi-Fi by comparing Ethernet-only and Wi-Fi traffic paths, varying Wi-Fi band and distance, and finally combining all subsystems to approach the rated maximum power.
-It addresses \textbf{RQ5} (Ethernet vs.\ Wi-Fi), \textbf{RQ7} (device type and signal strength), and completes \textbf{RQ8} (reaching rated maximum power).
+This test measures the effect of frequency band (2.4\,GHz vs.\ 5\,GHz), physical distance, and wall attenuation on Wi-Fi power consumption and throughput.
+It addresses \textbf{RQ5}.
 
 \subsubsection{Devices Under Test}
-Three devices with Wi-Fi: Fritzbox~7530 (802.11ac), Asus~RT-AX68U (802.11ax), Huawei~EG8245W5-8T (802.11ax).
-The Alcatel~HH40V (802.11n, 2.4\,GHz only) may be included for a limited subset.
+All four devices are tested:
+\begin{itemize}
+    \item \textbf{Asus RT-AX68U} (802.11ax, dual-band 2.4 + 5\,GHz, 160\,MHz capable)
+    \item \textbf{Fritzbox 7530} (802.11ac, dual-band 2.4 + 5\,GHz)
+    \item \textbf{Huawei EG8245W5-8T} (802.11ax, dual-band 2.4 + 5\,GHz)
+    \item \textbf{Alcatel HH40V} (802.11n, 2.4\,GHz only)
+\end{itemize}
 
-\subsubsection{Physical Topology}
-Figure~\ref{fig:test4_wifi_topology} shows the physical setup for Runs~A--D (Wi-Fi traffic) and Run~E (combined Ethernet + Wi-Fi maximum load).
+\subsubsection{Physical Setup}
+\begin{itemize}
+    \item \textbf{Near position:} Client device $<$2\,m from DUT, line of sight.
+    \item \textbf{Wall position:} Client device $\sim$10\,m from DUT, through one interior wall.
+\end{itemize}
+The DECT~200 measures DUT power.
+For the Asus, Fritzbox, and Alcatel, a Wi-Fi client device runs iperf3 to the test PC connected via Ethernet LAN.
+The load generator tool records both power and throughput inline.
+
+\subsubsection{Test Protocol}
+Each scenario (device $\times$ band $\times$ distance) is a separate 5-minute run: 1\,min idle baseline, 3\,min iperf3 TCP flood, 1\,min post-test baseline.
+Dual-band devices are tested four times (2 bands $\times$ 2 distances); the Alcatel is tested twice (2 distances on 2.4\,GHz only).
+
+\subsubsection{Device-Specific Deviations}
+
+\paragraph{Fritzbox: Both radios always active.}
+The Fritzbox~7530 firmware does not allow disabling individual radio bands.
+Both the 2.4\,GHz and 5\,GHz radios remain active during all tests.
+The idle baseline therefore includes the power draw of both radios, and tests labelled ``5\,GHz'' or ``2.4\,GHz'' reflect which band carries the iperf3 traffic while the other radio is idle.
+
+\paragraph{Huawei: Wi-Fi client isolation.}
+The Huawei~EG8245W5-8T isolates LAN and Wi-Fi clients by default, preventing iperf3 from running between a wired PC and a Wi-Fi client.
+Instead, iperf3 runs between two Wi-Fi client devices communicating through the router.
+Since the load generator cannot measure Wi-Fi throughput directly in this configuration, power is recorded by the tool (with load generation disabled), and iperf3 is started manually on the client.
+Throughput is captured separately from the iperf3 terminal output (1-second intervals, averaged to 5-second bins for analysis).
+
+\paragraph{Alcatel: 100\,Mbps LAN bottleneck.}
+The Alcatel has only two 100\,Mbps Ethernet ports, creating a potential throughput bottleneck.
+To verify, additional ``both Wi-Fi'' tests were performed with the test PC also connected via Wi-Fi, bypassing the LAN entirely.
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[scale=0.81, transform shape,
-        box/.style={rectangle, draw, minimum width=2.3cm, minimum height=1.0cm, text centered, font=\small, align=center, rounded corners=2pt},
+    \begin{tikzpicture}[
+        box/.style={rectangle, draw, minimum width=2.0cm, minimum height=0.9cm, text centered, font=\scriptsize, align=center, rounded corners=2pt},
         dut/.style={box, fill=yellow!20, thick},
         wifi/.style={decorate, decoration={snake, amplitude=0.4mm, segment length=2mm, post length=1mm}, thick, blue},
-        eth/.style={->, >=stealth, thick, green!60!black},
     ]
-        % Runs A-D: WiFi only
-        \node[font=\bfseries] at (0, 4.2) {Runs A--D: Wi-Fi Traffic Only};
-        \node[dut] (dut1) at (0, 2.5) {DUT\\{\scriptsize (no Eth cables)}};
-        \node[box] (pc1) at (-3, 0.5) {Test PC\\{\scriptsize via Wi-Fi}};
-        \node[box] (phone1) at (3, 0.5) {Smartphone\\{\scriptsize (Run D)}};
-        \draw[wifi] (pc1) -- node[left, font=\scriptsize, midway] {5/2.4\,GHz} (dut1);
-        \draw[wifi, red] (phone1) -- node[right, font=\scriptsize, midway] {iperf3} (dut1);
-        \node[box, fill=gray!10] (meter1) at (0, 0.5) {DECT~200};
-        \draw[->, thick] (meter1) -- (dut1);
-        
-        % Run E: Combined maximum
-        \node[font=\bfseries] at (9, 4.2) {Run E: All Subsystems};
-        \node[dut] (dut2) at (9, 2.5) {DUT\\{\scriptsize (4 Eth + Wi-Fi)}};
-        \node[box] (pc2) at (6.5, 1) {Test PC\\{\scriptsize 4$\times$ Eth}};
-        \node[box] (laptop2) at (11.5, 1) {Laptop\\{\scriptsize 5\,GHz}};
-        \node[box] (phone2) at (11.5, -0.5) {Phone\\{\scriptsize 2.4\,GHz}};
-        \draw[eth] (pc2) -- node[above, font=\tiny, sloped] {UDP flood} (dut2);
-        \draw[wifi] (laptop2) -- (dut2);
-        \draw[wifi] (phone2) -- (dut2);
-        \node[box, fill=gray!10] (meter2) at (9, 0.5) {DECT~200};
-        \draw[->, thick] (meter2) -- (dut2);
+        \node[dut] (dut) at (0,0) {DUT\\{\tiny Wi-Fi only}};
+        \node[box, fill=gray!10] (meter) at (0,-1.5) {DECT~200};
+        \draw[->, thick] (meter) -- (dut);
+
+        % Near position
+        \node[box, fill=green!15] (near) at (-3.5,0) {Client\\{\tiny $<$2\,m, LoS}};
+        \draw[wifi] (near) -- node[above, font=\tiny] {Near} (dut);
+
+        % Far position
+        \node[box, fill=red!15] (far) at (4,0) {Client\\{\tiny $\sim$10\,m, 1 wall}};
+        \draw[wifi, red] (far) -- node[above, font=\tiny] {Wall} (dut);
+
+        % Wall
+        \fill[brown!40] (2.2,-0.8) rectangle (2.35,0.8);
+        \node[font=\tiny, rotate=90] at (2.28,0) {wall};
+
+        % Test PC (iperf target)
+        \node[box] (pc) at (0,1.8) {Test PC\\{\tiny iperf3 server}};
+        \draw[->, thick, green!60!black] (dut) -- node[right, font=\tiny] {Ethernet} (pc);
     \end{tikzpicture}
-    \caption{Test~4 physical topologies. Runs~A--D use Wi-Fi-only traffic to isolate Wi-Fi power consumption. Run~E combines maximum Ethernet load (4 ports) with multiple Wi-Fi clients to approach the rated maximum power.}
-    \label{fig:test4_wifi_topology}
+    \caption{Test~4 setup for Wi-Fi distance measurements. The client device alternates between near ($<$2\,m, line of sight) and wall ($\sim$10\,m, through one interior wall) positions while running iperf3 TCP traffic through the DUT. For the Huawei, both the client and the iperf3 server are on Wi-Fi instead.}
+    \label{fig:test4_distance_setup}
 \end{figure}
-
-\subsubsection{Test Protocol}
-Five runs are performed per device. Runs~A--D each follow the same structure: 10\,min idle, 20\,min load, 10\,min post.
-The test PC connects to the DUT's Wi-Fi network and uses its Wi-Fi interface in the load generator.
-
-\paragraph{Run~A --- Wi-Fi 5\,GHz, Near ($<$2\,m), Laptop:}
-\begin{itemize}
-    \item Test PC connected to DUT via 5\,GHz Wi-Fi (all Ethernet cables disconnected from DUT).
-    \item Single Wi-Fi interface, UDP, \texttt{target\_mbps=0} (maximum achievable).
-    \item 16 workers, 1400-byte packets.
-\end{itemize}
-
-\paragraph{Run~B --- Wi-Fi 2.4\,GHz, Near ($<$2\,m), Laptop:}
-\begin{itemize}
-    \item Same as Run~A but connected to the DUT's 2.4\,GHz SSID.
-\end{itemize}
-
-\paragraph{Run~C --- Wi-Fi 5\,GHz, Far ($\sim$10\,m, 1 wall), Laptop:}
-\begin{itemize}
-    \item Same as Run~A but with the test PC positioned $\sim$10\,m from the DUT, through one wall.
-    \item Record signal strength (RSSI) at test start and end via \texttt{iwconfig} or \texttt{iw dev wlanX link}.
-\end{itemize}
-
-\paragraph{Run~D --- Wi-Fi 5\,GHz, Near, Smartphone:}
-\begin{itemize}
-    \item A smartphone runs \texttt{iperf3 -c <DUT\_IP> -u -b 0 -t 1200} as the traffic source instead of the custom load generator.
-    \item The test application runs in power-monitoring-only mode (\texttt{load\_enabled = off}).
-    \item Custom markers annotate the start/stop of the iperf3 session.
-\end{itemize}
-
-\paragraph{Run~E --- Combined Maximum Load (All Subsystems):}
-This run attempts to reach the manufacturer's rated maximum power:
-\begin{itemize}
-    \item All 4 Ethernet ports loaded with maximum UDP (same as Test~1, 4-port phase).
-    \item Simultaneously, 1--2 Wi-Fi clients connected and generating traffic (laptop on 5\,GHz, smartphone on 2.4\,GHz).
-    \item If the DUT has a USB port, attach a USB storage device.
-    \item Pre-test: 10\,min, combined load: 20\,min, post-test: 10\,min.
-    \item The load generator runs on the test PC targeting all 4 Ethernet interfaces; Wi-Fi clients run independently.
-\end{itemize}
-
-\noindent\textbf{Ethernet baseline:} For RQ5 comparison, the single-port Ethernet results from Test~1 (load phase~1) serve as the Ethernet baseline, avoiding redundant measurements.
 
 \subsubsection{Research Questions Addressed}
 \begin{description}
-    \item[RQ5 (Fully addressed):] Comparing Test~1 Ethernet-only power with Runs~A/B (Wi-Fi-only) at comparable throughput levels isolates the per-client power cost of each medium.
-    \item[RQ7 (Fully addressed):] Runs~A vs.\ C (near vs.\ far) and Runs~A vs.\ D (laptop vs.\ smartphone) isolate the effects of distance/signal strength and client type on DUT power consumption.
-    \item[RQ8 (Fully addressed):] Run~E loads all subsystems simultaneously, providing the closest approximation to the rated maximum. Combined with the Ethernet-only maximum from Test~1, this reveals how much power headroom the Wi-Fi radios and other peripherals account for.
+    \item[RQ5:] Comparing near vs.\ wall power for the same band isolates the effect of signal attenuation on DUT power consumption. Comparing 2.4\,GHz vs.\ 5\,GHz at the same distance reveals band-dependent power and throughput characteristics. Cross-device comparison quantifies how router hardware and Wi-Fi standard (802.11n/ac/ax) affect energy efficiency.
 \end{description}
-\todo{Run this test and fill in results.}
 
 % ---------------------------------------------------------------------------
-\subsection{Test~5: ISP Bridge Mode Comparison (Planned)}
+\subsection{Test~5: ISP Bridge Mode Comparison}
 \label{sec:test-bridge-mode}
 % ---------------------------------------------------------------------------
 
 This test investigates whether splitting ISP-provided equipment into bridge mode plus a dedicated router reduces total system power consumption compared to using the ISP device in standalone router mode.
-It directly addresses \textbf{RQ9}.
+It directly addresses \textbf{RQ8}.
 
 \subsubsection{Devices Under Test}
 \begin{description}
     \item[Configuration~A (Standalone):] Huawei EG8245W5-8T operating as router (NAT, DHCP, Wi-Fi, firewall).
+        This configuration reuses the Huawei results already obtained in Test~1 (Section~\ref{sec:test-incremental-port-load}), since the protocol and load parameters are identical.
+        No additional measurement run is required.
     \item[Configuration~B (Split):] Huawei EG8245W5-8T in bridge mode (minimal processing) + Asus RT-AX68U as dedicated router.
 \end{description}
 
@@ -404,7 +413,7 @@ Figure~\ref{fig:test5_bridge_topology} compares the two configurations.
 
 \begin{figure}[H]
     \centering
-    \begin{tikzpicture}[scale=0.79, transform shape,
+    \begin{tikzpicture}[scale=0.75, transform shape,
         box/.style={rectangle, draw, minimum width=2.3cm, minimum height=1.1cm, text centered, font=\small, align=center, rounded corners=2pt},
         router/.style={box, fill=blue!15, thick},
         bridge/.style={box, fill=orange!15, thick},
@@ -448,25 +457,21 @@ Both configurations are tested with the same incremental port load profile as Te
     \item \textbf{Post-test baseline} (10\,min): Traffic stopped.
 \end{enumerate}
 
-\paragraph{Configuration~A:} Standard Test~1 protocol on the Huawei.
-A single DECT~200 smart plug measures total Huawei power.
+\paragraph{Configuration~A:}
+Reuses the Huawei standalone measurements from Test~1 (Section~\ref{sec:results-huawei}).
+Because the load profile, traffic parameters, and power metering setup are identical, no additional measurement run is needed; the Huawei Test~1 data serves directly as the single-device baseline.
 
 \paragraph{Configuration~B:}
 \begin{itemize}
     \item Huawei set to bridge mode via its admin interface (disables NAT, DHCP, firewall, optionally Wi-Fi).
     \item Asus RT-AX68U configured as the primary router (WAN port connected to Huawei's LAN port).
     \item Test PC connects to the Asus's LAN ports.
-    \item \textbf{Power measurement:} Two options depending on available equipment:
-    \begin{enumerate}
-        \item[(a)] Two DECT~200 plugs (one per device) --- enables separate per-device power attribution.
-        \item[(b)] Both devices on a single DECT~200 via a power strip --- measures combined system power directly.
-    \end{enumerate}
+    \item \textbf{Power measurement:} Both devices on a single DECT~200 via a power strip --- measures combined system power directly.
 \end{itemize}
 
 \noindent\textbf{Load generation parameters:} Identical to Test~1 (UDP, 1400\,bytes, 16 workers, 5\,s polling).
 
 \subsubsection{Research Questions Addressed}
 \begin{description}
-    \item[RQ9 (Fully addressed):] Comparing Configuration~A total power vs.\ Configuration~B total power (Huawei bridge + Asus router) at each load level reveals whether the bridge-mode split is more or less efficient. The per-device breakdown (if two plugs are available) shows how much power the Huawei saves in bridge mode vs.\ how much the Asus adds.
+    \item[RQ8 (Fully addressed):] Comparing Configuration~A total power (Huawei standalone, from Test~1) vs.\ Configuration~B total power (Huawei bridge + Asus router) at each load level reveals whether the bridge-mode split is more or less efficient. Because Configuration~B uses a single DECT~200 measuring the combined power of both devices via a power strip, the comparison is straightforward: single-device power vs.\ two-device combined power at equivalent load phases.
 \end{description}
-\todo{Run this test and fill in results.}

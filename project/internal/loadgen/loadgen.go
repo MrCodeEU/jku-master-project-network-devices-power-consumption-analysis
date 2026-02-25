@@ -7,16 +7,18 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type Config struct {
 	TargetIP         string
 	TargetPort       int
-	Protocol         string             // "udp", "tcp", or "layer2"
+	Protocol         string             // "udp", "tcp", "layer2", or "iperf3"
 	PacketSize       int
 	TargetMAC        string             // Target MAC address for Layer 2 (required for layer2 protocol)
 	InterfaceConfigs []InterfaceConfig  // Per-interface configuration
+	Reverse          bool               // iperf3 reverse mode (-R flag): server sends, client receives
 }
 
 // InterfaceConfig holds settings for a single network interface
@@ -46,7 +48,7 @@ type InterfaceThroughput struct {
 	BytesSent        uint64
 	PacketsSent      uint64
 	Mbps             float64
-	bytesSent        uint64
+	bytesSent        atomic.Uint64 // atomic counter — no lock needed per packet
 	lastUpdate       time.Time
 	throughput       float64
 	targetThroughput float64 // Current target for this interface (can be updated during ramping)
@@ -56,7 +58,7 @@ type InterfaceThroughput struct {
 // NetworkLoadGenerator floods the target with packets
 type NetworkLoadGenerator struct {
 	mu                   sync.Mutex
-	bytesSent            uint64
+	bytesSent            atomic.Uint64 // atomic counter — no lock needed per packet
 	lastUpdate           time.Time
 	throughput           float64 // Total Mbps
 	targetThroughput     float64 // Target Mbps (0 = unlimited) - global fallback
@@ -278,45 +280,53 @@ func (g *NetworkLoadGenerator) initInterfaceThroughput(ic InterfaceConfig) *Inte
 }
 
 func (g *NetworkLoadGenerator) updateThroughput(bytesSent int) {
+	// Atomic add — no lock needed for the per-packet counter
+	g.bytesSent.Add(uint64(bytesSent))
+
+	// Only take the lock to compute throughput (≤1× per second)
+	// Use a quick non-blocking check first to avoid contention
 	g.mu.Lock()
-	defer g.mu.Unlock()
-	
-	g.bytesSent += uint64(bytesSent)
 	now := time.Now()
 	elapsed := now.Sub(g.lastUpdate).Seconds()
-	
-	// Update throughput every second
-	// NOTE: This measures actual bytes sent via socket API, which closely reflects
-	// what the NIC transmits. The calculation accounts for UDP/IP overhead in the
-	// payload size, so reported throughput = actual wire throughput.
+
 	if elapsed >= 1.0 {
-		// Convert bytes per second to Megabits per second
-		// 1 byte = 8 bits, 1 Mbps = 1,000,000 bits/s
-		g.throughput = (float64(g.bytesSent) * 8.0) / (elapsed * 1_000_000)
-		g.bytesSent = 0
+		sent := g.bytesSent.Swap(0)
+		g.throughput = (float64(sent) * 8.0) / (elapsed * 1_000_000)
 		g.lastUpdate = now
 	}
+	g.mu.Unlock()
 }
 
 // updateInterfaceThroughput updates throughput for a specific interface
 func (g *NetworkLoadGenerator) updateInterfaceThroughput(ifaceName string, bytesSent int) {
-	// Update total throughput
+	// Update total throughput (atomic add, lock only for computation)
 	g.updateThroughput(bytesSent)
-	
+
 	// Update interface-specific throughput
-	it := g.getOrCreateInterfaceThroughput(ifaceName)
+	// Fast path: read the interface tracker without lock (it's immutable after init)
+	if ifaceName == "" {
+		ifaceName = "default"
+	}
+	g.mu.Lock()
+	it := g.interfaceThroughputs[ifaceName]
+	g.mu.Unlock()
+	if it == nil {
+		return
+	}
+
+	// Atomic add — no lock needed per packet
+	it.bytesSent.Add(uint64(bytesSent))
+
+	// Compute throughput only when ≥1s has elapsed
 	it.mu.Lock()
-	defer it.mu.Unlock()
-	
-	it.bytesSent += uint64(bytesSent)
 	now := time.Now()
 	elapsed := now.Sub(it.lastUpdate).Seconds()
-	
 	if elapsed >= 1.0 {
-		it.throughput = (float64(it.bytesSent) * 8.0) / (elapsed * 1_000_000)
-		it.bytesSent = 0
+		sent := it.bytesSent.Swap(0)
+		it.throughput = (float64(sent) * 8.0) / (elapsed * 1_000_000)
 		it.lastUpdate = now
 	}
+	it.mu.Unlock()
 }
 
 func (g *NetworkLoadGenerator) Start(ctx context.Context, config Config) error {
@@ -525,13 +535,14 @@ func (g *NetworkLoadGenerator) runUDPWorkerWithConfig(ctx context.Context, id in
 	const batchSize = 10 // Send 10 packets before sleeping
 	packetCount := 0
 
+	// Cache the delay and recalculate once per batch (not per packet)
+	delay := g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			delay := g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
-			
 			// Send packet
 			n, err := conn.Write(buffer)
 			if err != nil {
@@ -539,7 +550,7 @@ func (g *NetworkLoadGenerator) runUDPWorkerWithConfig(ctx context.Context, id in
 					return
 				}
 				log.Printf("Worker %d: Write error: %v\n", id, err)
-				PreciseSleep(100 * time.Millisecond)
+				PreciseSleep(time.Millisecond) // brief retry delay (was 100ms — far too long)
 				continue
 			}
 			g.updateInterfaceThroughput(ic.Name, n)
@@ -548,11 +559,15 @@ func (g *NetworkLoadGenerator) runUDPWorkerWithConfig(ctx context.Context, id in
 			// Batch delay: only sleep after every batchSize packets
 			// This reduces PreciseSleep overhead from N calls to N/batchSize calls
 			if delay > 0 && packetCount >= batchSize {
-				PreciseSleep(delay * batchSize)
+				PreciseSleep(delay * time.Duration(batchSize))
 				packetCount = 0
+				// Re-read delay once per batch (target may change during ramping)
+				delay = g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
 			} else if delay == 0 {
 				// No rate limiting - reset counter to avoid overflow
 				packetCount = 0
+				// Check if rate limiting has been enabled (ramp started)
+				delay = g.getWorkerDelayForInterface(config.PacketSize, ifaceName)
 			}
 		}
 	}

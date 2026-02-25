@@ -346,8 +346,9 @@
                                 <option value="udp" selected>UDP (Layer 3/4)</option>
                                 <option value="tcp">TCP (Layer 3/4)</option>
                                 <option value="layer2">Layer 2 (Raw Ethernet)</option>
+                                <option value="iperf3">iperf3 (External Tool)</option>
                             </select>
-                            <p style="font-size: 0.85em; color: var(--secondary-color); margin-top: 5px;">
+                            <p id="protocolHelp" style="font-size: 0.85em; color: var(--secondary-color); margin-top: 5px;">
                                 Layer 2 requires admin privileges and target MAC address
                             </p>
                         </div>
@@ -381,6 +382,17 @@
                         <div class="form-group">
                             <label for="target_mac">Target MAC Address:</label>
                             <input type="text" id="target_mac" name="target_mac" placeholder="aa:bb:cc:dd:ee:ff" pattern="[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}">
+                        </div>
+                    </div>
+
+                    <div id="iperf3Config" style="display: none;">
+                        <div class="checkbox-group" style="border-top: none; padding-top: 0;">
+                            <input type="checkbox" id="iperf3_reverse" name="iperf3_reverse">
+                            <label for="iperf3_reverse">Reverse mode (-R): server sends to client (download test)</label>
+                        </div>
+                        <div class="help-text">
+                            Requires iperf3 server running on the target device (e.g. <code>iperf3 -s</code> on the phone).
+                            Default port: 5201. Throughput is parsed from iperf3 text output in real-time.
                         </div>
                     </div>
 

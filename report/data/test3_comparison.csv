@@ -1,0 +1,45 @@
+Device,Phase,Group,AvgPowerMW,StdDevPowerMW,DataPoints
+asus,Bare Minimum,1,3575.8,20.2,12
+asus,+Cable 1,1,4140.0,0.0,9
+asus,+Cable 2,1,4430.0,0.0,10
+asus,+Cable 3,1,4739.1,32.7,11
+asus,+Cable 4,1,4784.6,44.8,13
+asus,+USB 1,2,5070.0,0.0,8
+asus,+USB 2,2,5226.7,67.8,9
+asus,+turn on 2.4,3,6525.0,124.3,10
+asus,+wifi 5,3,7883.3,35.0,9
+asus,+client 2.4,4,8004.0,118.4,10
+asus,+client 5,4,7986.0,185.7,10
+asus,WiFi Load,5,11331.8,742.6,22
+asus,All MAX Load,6,12285.9,166.6,22
+huawei,Bare Minimum,1,6342.5,31.7,12
+huawei,+Cable 1,1,6629.0,33.8,10
+huawei,+Cable 2,1,6874.0,29.5,10
+huawei,+Cable 3,1,7173.3,35.0,9
+huawei,+Cable 4,1,7430.0,0.0,11
+huawei,+USB 1,2,7793.3,34.8,21
+huawei,+wifi 2.4,3,8580.0,0.0,9
+huawei,+wifi 5,3,9240.0,241.1,10
+huawei,+client 2.4,4,9362.7,58.2,11
+huawei,+client 5,4,9328.9,61.7,9
+huawei,WiFi Load,5,10572.7,576.6,22
+huawei,All MAX Load,6,11305.9,244.7,22
+fritzbox,Bare Minimum,1,1983.3,122.6,12
+fritzbox,+Cable 1,1,2210.0,0.0,11
+fritzbox,+Cable 2,1,2471.0,91.7,10
+fritzbox,+Cable 3,1,2790.0,64.8,10
+fritzbox,+Cable 4,1,3041.0,91.7,10
+fritzbox,+USB 1,2,3459.5,94.8,21
+fritzbox,WiFi Radios ON,3,5204.5,316.8,22
+fritzbox,+wifi 2.4,4,5021.0,87.6,10
+fritzbox,+wifi 5,4,5338.0,69.6,10
+fritzbox,WiFi Load,5,6289.1,275.9,22
+fritzbox,All MAX Load,6,6794.1,303.4,22
+alcatel,Bare Minimum,1,1140.0,0.0,12
+alcatel,+Cable 1,1,1361.0,65.9,10
+alcatel,+Cable 2,1,1484.4,30.9,9
+alcatel,+start wifi,3,1903.3,40.0,9
+alcatel,+client +1,4,1968.9,36.9,9
+alcatel,+client +1,4,2300.0,532.2,10
+alcatel,WiFi Load,5,2205.5,261.2,22
+alcatel,All MAX Load,6,2241.8,51.7,22

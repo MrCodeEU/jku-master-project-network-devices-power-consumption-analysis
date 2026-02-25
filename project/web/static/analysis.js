@@ -18,8 +18,9 @@ function initializeEventListeners() {
     document.getElementById('loadFromCsvBtn').addEventListener('click', showCsvSection);
     document.getElementById('searchTests')?.addEventListener('input', handleSearchTests);
     document.getElementById('loadSelectedTestBtn').addEventListener('click', loadSelectedTest);
-    document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
-    document.getElementById('exportPgfplotsBtn').addEventListener('click', exportForPgfplots);
+    document.getElementById('downloadCsvBtn')?.addEventListener('click', downloadCsv);
+    document.getElementById('exportExcelBtn')?.addEventListener('click', exportToExcel);
+    document.getElementById('exportPgfplotsBtn')?.addEventListener('click', exportForPgfplots);
     document.getElementById('resetZoomBtn')?.addEventListener('click', resetAllZoom);
 
     // CSV file input
@@ -1215,6 +1216,64 @@ function updateChartAnnotations() {
 function resetAllZoom() {
     if (powerChart) powerChart.resetZoom();
     if (throughputChart) throughputChart.resetZoom();
+}
+
+function downloadCsv() {
+    console.log('downloadCsv called, currentTestData:', currentTestData ? 'loaded' : 'null');
+    if (!currentTestData || !currentTestData.dataPoints || currentTestData.dataPoints.length === 0) {
+        alert('No data to download');
+        return;
+    }
+
+    const dp = currentTestData.dataPoints;
+
+    // Build metadata header
+    const lines = [];
+    lines.push(`# Test Name: ${currentTestData.testName}`);
+    lines.push(`# Device: ${currentTestData.deviceName}`);
+    lines.push(`# Timestamp: ${currentTestData.timestamp.toISOString()}`);
+    lines.push(`# Data Points: ${dp.length}`);
+
+    // Collect all interface names
+    const ifaceNames = new Set();
+    dp.forEach(p => {
+        if (p.throughput_by_interface) {
+            Object.keys(p.throughput_by_interface).forEach(k => ifaceNames.add(k));
+        }
+    });
+    const sortedIfaces = Array.from(ifaceNames).sort();
+
+    // CSV header
+    let header = 'Timestamp,ElapsedSeconds,PowerMW,ThroughputTotalMbps';
+    sortedIfaces.forEach(name => {
+        header += `,Throughput_${name.replace(/\s+/g, '_')}_Mbps`;
+    });
+    header += ',Phase,Events';
+    lines.push(header);
+
+    // CSV rows
+    dp.forEach(p => {
+        const ts = p.timestamp ? (p.timestamp instanceof Date ? p.timestamp.toISOString() : p.timestamp) : '';
+        const elapsed = p.elapsed_seconds || 0;
+        const power = p.power_mw || 0;
+        const throughput = p.throughput_mbps || 0;
+        const phase = p.phase || '';
+
+        let row = `${ts},${elapsed},${power},${throughput}`;
+        sortedIfaces.forEach(name => {
+            const val = (p.throughput_by_interface && p.throughput_by_interface[name] !== undefined)
+                ? p.throughput_by_interface[name] : 0;
+            row += `,${val}`;
+        });
+
+        const events = p.events ? p.events.map(e => e.message || e).join(' | ') : '';
+        row += `,${phase},"${events.replace(/"/g, '""')}"`;
+        lines.push(row);
+    });
+
+    const csvContent = lines.join('\n') + '\n';
+    const safeName = (currentTestData.testName || 'test').replace(/[^a-z0-9]/gi, '_');
+    downloadTextFile(`${safeName}.csv`, csvContent);
 }
 
 async function exportToExcel() {

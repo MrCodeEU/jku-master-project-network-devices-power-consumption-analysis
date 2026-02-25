@@ -139,6 +139,12 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		protocol = "udp"
 	}
 
+	// iperf3-specific: default port and reverse mode
+	iperf3Reverse := r.FormValue("iperf3_reverse") == "on"
+	if protocol == "iperf3" && targetPort == 9 {
+		targetPort = 5201 // Default iperf3 port
+	}
+
 	targetMAC := r.FormValue("target_mac")
 
 	packetSize, _ := strconv.Atoi(r.FormValue("packet_size"))
@@ -191,6 +197,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		TargetMAC:        targetMAC,
 		PacketSize:       packetSize,
 		InterfaceConfigs: interfaceConfigs,
+		Reverse:          iperf3Reverse,
 	}
 
 	config := runner.TestConfig{

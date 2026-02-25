@@ -22,10 +22,10 @@ Remove-NetIPAddress -InterfaceAlias "Ethernet" -Confirm:$false -ErrorAction Sile
 Remove-NetIPAddress -InterfaceAlias "Ethernet 6" -Confirm:$false -ErrorAction SilentlyContinue
 
 ### setup ip addresses for the fritzbox reachable address
-New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 169.254.1.3 -PrefixLength 16
-New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 169.254.1.4 -PrefixLength 16
-New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 169.254.1.5 -PrefixLength 16
-New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 169.254.1.6 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 192.168.188.3 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 192.168.188.4 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.188.5 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.188.6 -PrefixLength 16
 
 ## for huamei modem
 New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 192.168.18.3 -PrefixLength 16
@@ -44,20 +44,20 @@ New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.1.3 -PrefixLength
 New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.1.4 -PrefixLength 16
 
 ### static routing (is this necessarly?)
-New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 5" -NextHop "0.0.0.0" -RouteMetric 2
-New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 7" -NextHop "0.0.0.0" -RouteMetric 3
-New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet" -NextHop "0.0.0.0" -RouteMetric 4
-New-NetRoute -DestinationPrefix "169.254.1.1/32" -InterfaceAlias "Ethernet 6" -NextHop "0.0.0.0" -RouteMetric 5
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet 5" -NextHop "0.0.0.0" -RouteMetric 2
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet 7" -NextHop "0.0.0.0" -RouteMetric 3
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet" -NextHop "0.0.0.0" -RouteMetric 4
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet 6" -NextHop "0.0.0.0" -RouteMetric 5
 
 ### verify routing table (also via ping = works for all)
-╰─ Get-NetRoute -DestinationPrefix "169.254.1.1/32" | Format-Table DestinationPrefix, NextHop, InterfaceAlias, RouteMetric
+╰─ Get-NetRoute -DestinationPrefix "192.168.188.1/32" | Format-Table DestinationPrefix, NextHop, InterfaceAlias, RouteMetric
 
 DestinationPrefix NextHop InterfaceAlias RouteMetric
 ----------------- ------- -------------- -----------
-169.254.1.1/32    0.0.0.0 Ethernet 6               5
-169.254.1.1/32    0.0.0.0 Ethernet                 4
-169.254.1.1/32    0.0.0.0 Ethernet 7               3
-169.254.1.1/32    0.0.0.0 Ethernet 5               2
+192.168.188.1/32    0.0.0.0 Ethernet 6               5
+192.168.188.1/32    0.0.0.0 Ethernet                 4
+192.168.188.1/32    0.0.0.0 Ethernet 7               3
+192.168.188.1/32    0.0.0.0 Ethernet 5               2
 
 
 
@@ -67,7 +67,7 @@ DestinationPrefix NextHop InterfaceAlias RouteMetric
 3. run 20 min 2 ports
 4. run 20 min 3 ports
 5. run 20 min all 4 ports
-6. post of 20 min
+6. post of 10 min
 
 all ports run at full speed 
 

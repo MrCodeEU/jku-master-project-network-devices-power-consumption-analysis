@@ -75,6 +75,11 @@ type Runner struct {
 	eventMu    sync.Mutex
 	eventChan  chan Event
 	testActive bool
+
+	// iperf3 throughput (updated by runIperf3 goroutine, consumed by collectData)
+	iperf3Readings []float64 // accumulated 1-second readings since last poll
+	iperf3Last     float64   // last known reading (fallback if no new readings)
+	iperf3Mu       sync.Mutex
 }
 
 func NewRunner(meter fritzbox.PowerMeter, lg loadgen.LoadGenerator) *Runner {
@@ -217,9 +222,27 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 				var throughputByInterface map[string]float64
 			var targetThroughputByInterface map[string]float64
 			if phase == PhaseLoad && config.LoadEnabled {
-				throughput = r.loadGen.GetThroughput()
-				throughputByInterface = r.loadGen.GetThroughputByInterface()
-				targetThroughputByInterface = r.loadGen.GetTargetThroughputByInterface()
+				if config.LoadConfig.Protocol == "iperf3" {
+					r.iperf3Mu.Lock()
+					if len(r.iperf3Readings) > 0 {
+						// Average all readings accumulated since last poll
+						sum := 0.0
+						for _, v := range r.iperf3Readings {
+							sum += v
+						}
+						throughput = sum / float64(len(r.iperf3Readings))
+						r.iperf3Last = throughput
+						r.iperf3Readings = r.iperf3Readings[:0] // drain
+					} else {
+						throughput = r.iperf3Last // no new readings yet, use last known
+					}
+					r.iperf3Mu.Unlock()
+					throughputByInterface = map[string]float64{"iperf3": throughput}
+				} else {
+					throughput = r.loadGen.GetThroughput()
+					throughputByInterface = r.loadGen.GetThroughputByInterface()
+					targetThroughputByInterface = r.loadGen.GetTargetThroughputByInterface()
+				}
 			}
 
 			// Collect pending events
@@ -264,41 +287,58 @@ func (r *Runner) RunTest(ctx context.Context, config TestConfig, updateChan chan
 	if config.LoadEnabled && (config.LoadConfig.TargetIP != "" || config.LoadConfig.TargetMAC != "") {
 		loadCtx, loadCancel = context.WithCancel(ctx)
 
-		// Start interfaces with their individual pre-delays
-		for _, ic := range config.LoadConfig.InterfaceConfigs {
-			ifaceConfig := ic // capture for goroutine
+		if config.LoadConfig.Protocol == "iperf3" {
+			// iperf3 mode: run as subprocess instead of per-interface load gen
+			r.iperf3Mu.Lock()
+			r.iperf3Readings = nil
+			r.iperf3Last = 0
+			r.iperf3Mu.Unlock()
+
 			go func() {
-				ifaceName := ifaceConfig.Name
-				if ifaceName == "" {
-					ifaceName = "OS-routing"
-				}
-
-				// Wait for interface-specific pre-delay
-				if ifaceConfig.PreTime > 0 {
-					fmt.Printf("[%s] Waiting %.1fs before starting...\n", ifaceName, ifaceConfig.PreTime.Seconds())
-					select {
-					case <-loadCtx.Done():
-						return
-					case <-time.After(ifaceConfig.PreTime):
-					}
-				}
-
-				// Notify interface start
-				r.addEvent(EventInterfaceStart, fmt.Sprintf("Interface %s started", ifaceName))
-
-				// Create per-interface load config
-				perInterfaceConfig := config.LoadConfig
-				perInterfaceConfig.InterfaceConfigs = []loadgen.InterfaceConfig{ifaceConfig}
-
-				err := r.loadGen.Start(loadCtx, perInterfaceConfig)
+				r.addEvent(EventInterfaceStart, "iperf3 started")
+				err := r.runIperf3(loadCtx, config.LoadConfig, config.Duration)
 				if err != nil {
-					fmt.Printf("Load generation error [%s]: %v\n", ifaceName, err)
+					fmt.Printf("iperf3 error: %v\n", err)
+					r.addEvent(EventCustom, fmt.Sprintf("iperf3 error: %v", err))
 				}
 			}()
+		} else {
+			// Standard load gen: start interfaces with their individual pre-delays
+			for _, ic := range config.LoadConfig.InterfaceConfigs {
+				ifaceConfig := ic // capture for goroutine
+				go func() {
+					ifaceName := ifaceConfig.Name
+					if ifaceName == "" {
+						ifaceName = "OS-routing"
+					}
 
-			// Handle per-interface ramping
-			if ic.RampSteps > 0 && ic.TargetThroughput > 0 {
-				go r.runInterfaceRamping(loadCtx, ic)
+					// Wait for interface-specific pre-delay
+					if ifaceConfig.PreTime > 0 {
+						fmt.Printf("[%s] Waiting %.1fs before starting...\n", ifaceName, ifaceConfig.PreTime.Seconds())
+						select {
+						case <-loadCtx.Done():
+							return
+						case <-time.After(ifaceConfig.PreTime):
+						}
+					}
+
+					// Notify interface start
+					r.addEvent(EventInterfaceStart, fmt.Sprintf("Interface %s started", ifaceName))
+
+					// Create per-interface load config
+					perInterfaceConfig := config.LoadConfig
+					perInterfaceConfig.InterfaceConfigs = []loadgen.InterfaceConfig{ifaceConfig}
+
+					err := r.loadGen.Start(loadCtx, perInterfaceConfig)
+					if err != nil {
+						fmt.Printf("Load generation error [%s]: %v\n", ifaceName, err)
+					}
+				}()
+
+				// Handle per-interface ramping
+				if ic.RampSteps > 0 && ic.TargetThroughput > 0 {
+					go r.runInterfaceRamping(loadCtx, ic)
+				}
 			}
 		}
 	}

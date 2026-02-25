@@ -1,0 +1,7 @@
+Phase,Group,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,DataPoints,EthThroughputMbps,EthThroughputStdMbps
++wifi 2.4,3,8417.0,222.8,7790.0,8510.0,10,,
++wifi 5,3,9177.0,212.3,8580.0,9290.0,10,,
++client 2.4,4,9234.0,29.5,9220.0,9290.0,10,,
++client 5,4,9290.0,46.7,9220.0,9360.0,10,,
+WiFi Load,5,12718.6,821.0,9150.0,13010.0,22,,
+All MAX Load,6,13477.7,125.4,13010.0,13580.0,22,3820.1,14.1

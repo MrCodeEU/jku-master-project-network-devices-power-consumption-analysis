@@ -1,0 +1,7 @@
+Phase,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,AvgThroughputMbps,StdDevThroughputMbps,DurationSeconds,DataPoints,EfficiencyMbpsPerW,AvgTput_Ethernet_Mbps,AvgTput_Ethernet_5_Mbps,AvgTput_Ethernet_6_Mbps,AvgTput_Ethernet_7_Mbps
+Pre-Test Baseline,16632.2,59.4,16520.0,16880.0,0.0,0.0,595,120,0.00,0.0,0.0,0.0,0.0
+Ethernet,16981.0,50.8,16660.0,17090.0,955.0,0.5,1190,239,56.24,955.0,0.0,0.0,0.0
+Ethernet 5,17020.9,58.2,16880.0,17160.0,1951.2,65.2,1195,240,114.64,955.4,995.8,0.0,0.0
+Ethernet 6,17044.8,56.7,16950.0,17300.0,2950.7,64.5,1195,240,173.11,954.8,1000.0,995.8,0.0
+Ethernet 7,17071.8,69.6,16950.0,17450.0,3950.8,65.3,1200,241,231.42,955.0,1000.0,1000.0,995.9
+Post-Test Baseline,16672.7,76.8,16590.0,17090.0,0.0,0.0,595,120,0.00,0.0,0.0,0.0,0.0

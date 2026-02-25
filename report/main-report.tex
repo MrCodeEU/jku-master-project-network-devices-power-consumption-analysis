@@ -74,10 +74,10 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 
-%% Treat input files as UTF-8 encoded. Make sure to always load this when you use pdfLaTeX
-%% so that pdfLaTeX knows how to read and interpret characters in this source file.
-%% 
-\usepackage[utf8]{inputenc}
+%% Treat input files as UTF-8 encoded. Not needed for LuaLaTeX/XeLaTeX (UTF-8 is native),
+%% but required for pdfLaTeX. Commented out since this project uses LuaLaTeX.
+%%
+%\usepackage[utf8]{inputenc}
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -145,6 +145,7 @@
 %% a package `biblatex', you would use the command `\usepackage{biblatex}'.
 %% 
 
+\usepackage{minted}  % must come before csquotes to avoid fvextra/lineno warning
 \usepackage{csquotes}
 \usepackage[backend=biber,citestyle=numeric,sortcites=true,maxcitenames=2,style=ACM-Reference-Format]{biblatex}
 \setcounter{biburlnumpenalty}{100} %% reducing biburl* penalties typically improves URL placement in bibliography
@@ -160,7 +161,6 @@
 \pgfplotsset{compat=1.18}
 \usepgfplotslibrary{statistics}
 \usepackage{pgfplotstable}
-\usepackage{minted}
 \usepackage{booktabs}
 \usetikzlibrary{fit,shapes,arrows,positioning,patterns}
 %\usepackage{acronym}
@@ -199,12 +199,12 @@
 %\titleshort{Optional space for your abbreviated title}
 
 %% Command \subtitle{subtitle}: sets the subtitle for seminar/technical reports (not used for theses)
-\subtitle{Technical Report\\%
+\subtitle{\texorpdfstring{Technical Report\\%
     \usekomafont{subtitlesmall}%
     \hfill\\%
     Master Project about the Analysis of Power Consumption of different Home and SME Network Equipment.
     \hfill\\%
-}
+}{Technical Report -- Master Project about the Analysis of Power Consumption of different Home and SME Network Equipment}}
 
 %% Command \author{name}: sets the author name(s); separate multiple authors with \and; use \prefix{}
 %%   and \suffix{} to add academic titles and suffixes (if needed); use \affiliation{} to add an
@@ -303,28 +303,25 @@ With this data, we can evaluate the efficiency of these devices under different 
 
 \section{Research Questions}
 \label{sec:research-questions}
-\todo{Consider restructuring RQs into primary (RQ1--RQ3) and secondary (RQ4--RQ9) groups. Add a brief introductory paragraph explaining how these RQs were derived.}
+\todo{Consider restructuring RQs into primary (RQ1--RQ3) and secondary (RQ4--RQ8) groups. Add a brief introductory paragraph explaining how these RQs were derived.}
 The following research questions guide this investigation:
 \begin{enumerate}
     \item[\textbf{RQ1}] How does power consumption change with the number of active Ethernet ports?
     \label{rq:ports}
-    \item[\textbf{RQ2}] Is there a measurable difference between 100\,Mbps and 1\,Gbps connections, in different load scenarios?
-    \label{rq:speed}
+    \item[\textbf{RQ2}] What is the per-port power overhead of idle Ethernet connections, and how does it compare to the incremental cost of active network traffic?
+    \label{rq:port-overhead}
     \item[\textbf{RQ3}] How does power consumption scale with network load (idle, 50\%, 100\% utilization of bandwidth)?
     \label{rq:load-scaling}
     \item[\textbf{RQ4}] Which equipment is suitable for continuous operation and which devices have high idle consumption that makes them candidates for automated shutdown during off-peak hours?
     \label{rq:idle-suitability}
-    \item[\textbf{RQ5}] How does power consumption per client differ between Ethernet and Wi-Fi connections? Is there a threshold where Wi-Fi becomes more efficient on a per-client basis?
-    \label{rq:eth-vs-wifi}
-    \item[\textbf{RQ6}] What is the actual impact of power-saving modes on overall power consumption?
+    \item[\textbf{RQ5}] How does Wi-Fi affect router power consumption, and how do factors such as frequency band (2.4 vs.\ 5\,GHz), number of connected clients, client device type, and signal strength (distance to access point) influence it?
+    \label{rq:wifi-impact}
+    \item[\textbf{RQ6}] What is the actual impact of manufacturer-provided power-saving modes (e.g., Fritzbox ``Green Mode,'' Asus scheduling features) on overall power consumption?
     \label{rq:power-saving}
-    \item[\textbf{RQ7}] Does the type of connected device (smartphone, laptop, IoT device) or the wireless signal strength (distance to access point) affect power consumption?
-    \label{rq:device-type}
-    \item[\textbf{RQ8}] Does a device's maximum power consumption rating correlate with its real-world power usage under typical operating conditions, and what does it take to reach that level?
+    \item[\textbf{RQ7}] Does a device's maximum power consumption rating correlate with its real-world power usage under typical operating conditions, and what does it take to reach that level?
     \label{rq:rated-vs-real}
-    \item[\textbf{RQ9}] How efficient is ISP-provided equipment (e.g., Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment?
+    \item[\textbf{RQ8}] How efficient is ISP-provided equipment (e.g., Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment?
     \label{rq:bridge-mode}
-    \todo{Decide whether to keep RQ9 or merge with RQ4.}
 \end{enumerate}
 
 \section{Setup}
@@ -420,7 +417,12 @@ The following research questions guide this investigation:
         \item \textbf{UDP flooding}: The primary method used. Achieves near line-rate throughput (e.g., 3.85\,Gbps aggregate on the Huawei EG8245W5-8T across 4$\times$1\,GbE ports). Uses 1400-byte packets with 16 workers per interface and batched sending (10 packets per sleep cycle).
         \item \textbf{Layer~2 raw frames}: Implemented via \texttt{libpcap} for direct Ethernet frame injection. On Windows, throughput was limited to approximately 550--600\,Mbps due to OS-level packet scheduling constraints.
     \end{itemize}
-    UDP flooding was selected as the primary load generation method due to its ability to saturate gigabit links reliably across all tested devices.
+    UDP flooding was selected as the primary load generation method for Ethernet load testing due to its ability to saturate gigabit links reliably across all tested devices.
+
+    In addition to the custom UDP/TCP/Layer~2 load generator, \textbf{iperf3} was used for Wi-Fi throughput testing.
+    The load generation tool integrates iperf3 as a subprocess, parsing its per-second output to record throughput alongside power data.
+    For phone-to-phone Wi-Fi load tests (Test~3), an Android iperf3 app was used to generate traffic between two smartphones connected to the DUT's Wi-Fi network.
+    For Wi-Fi-to-LAN tests (Test~4), the iperf3 server ran on the test PC while a Wi-Fi client device acted as the iperf3 client, routing traffic through the DUT.
 
     \subsubsection{Power Meter Polling Rate}
     The FritzBox DECT~200 smart plug natively updates its power reading only approximately once every two minutes, which is insufficient for capturing transient power behavior. To increase the effective polling rate, a Home Assistant automation was employed that sends a ``turn on'' command to the already-on smart plug every 15 seconds. This triggers the DECT~200 to refresh its power reading, achieving an effective polling interval of approximately 15 seconds. The test application then queries the updated value via TR-064 every 5 seconds.
@@ -430,7 +432,9 @@ The following research questions guide this investigation:
 
 \input{05-results}
 
-        %% 
+\input{09-conclusion}
+
+        %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

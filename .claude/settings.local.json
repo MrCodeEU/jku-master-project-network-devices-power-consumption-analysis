@@ -3,7 +3,10 @@
     "allow": [
       "Bash(tree:*)",
       "Bash(go get:*)",
-      "Bash(go build:*)"
+      "Bash(go build:*)",
+      "Bash(python3:*)",
+      "Bash(done)",
+      "Bash(cd /c/JKU/9_2025WS/PR/report && python preprocess_test3.py 2>&1)"
     ]
   }
 }

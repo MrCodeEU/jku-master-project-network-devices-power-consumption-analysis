@@ -1,0 +1,17 @@
+Device,Band,Distance,Label,IdleMeanMW,IdleStdMW,LoadMeanMW,LoadStdMW,PostMeanMW,ThroughputMeanMbps,ThroughputStdMbps,PowerIncreaseMW,PowerIncreasePct,EfficiencyMbpsPerW,HasSpeed
+asus,5,near,Asus 5 GHz Near,5860.0,0.0,8851.7,921.1,6682.5,584.3,32.5,2991.7,51.1,66.01,1
+asus,5,wall,Asus 5 GHz Wall,5825.0,36.6,9575.6,679.6,6170.0,244.4,27.2,3750.6,64.4,25.52,1
+asus,2.4,near,Asus 2.4 GHz Near,5482.5,60.6,8583.3,1134.2,5912.5,142.5,37.2,3100.8,56.6,16.61,1
+asus,2.4,wall,Asus 2.4 GHz Wall,5447.5,31.7,6443.3,368.1,5590.0,33.3,6.5,995.8,18.3,5.17,1
+fritzbox,5,near,Fritzbox 5 GHz Near,3605.0,36.6,4393.3,257.3,3837.5,235.0,22.0,788.3,21.9,53.50,1
+fritzbox,5,wall,Fritzbox 5 GHz Wall,3587.5,31.7,4610.6,360.0,4000.0,60.8,25.5,1023.1,28.5,13.18,1
+fritzbox,2.4,near,Fritzbox 2.4 GHz Near,3552.5,31.7,4077.5,153.7,3605.0,89.1,9.7,525.0,14.8,21.85,1
+fritzbox,2.4,wall,Fritzbox 2.4 GHz Wall,3930.0,0.0,4302.5,170.6,3635.8,51.3,9.0,372.5,9.5,11.93,1
+huawei,5,near,Huawei 5 GHz Near,7510.0,0.0,8144.7,509.3,7652.0,83.3,61.1,634.7,8.5,10.23,1
+huawei,5,wall,Huawei 5 GHz Wall,7490.0,36.2,8264.2,632.8,7760.0,36.2,20.6,774.2,10.3,4.38,1
+huawei,2.4,near,Huawei 2.4 GHz Near,7266.7,62.1,8722.5,712.5,7433.3,32.4,11.3,1455.8,20.0,3.72,1
+huawei,2.4,wall,Huawei 2.4 GHz Wall,7278.3,58.4,8812.8,805.3,7386.7,22.5,11.2,1534.4,21.1,2.55,1
+alcatel,2.4,near,Alcatel 2.4 GHz Near,1780.0,0.0,2578.6,202.6,1929.2,93.6,4.2,798.6,44.9,36.31,1
+alcatel,2.4,wall,Alcatel 2.4 GHz Wall,1762.5,31.7,2933.3,299.2,1925.0,88.2,7.8,1170.8,66.4,30.06,1
+alcatel,2.4,near_wifi,Alcatel 2.4 GHz Near (WiFi PC),1587.5,31.7,2210.8,202.6,1785.0,86.2,11.1,623.3,39.3,39.00,1
+alcatel,2.4,wall_wifi,Alcatel 2.4 GHz Wall (WiFi PC),1624.4,30.9,2390.3,101.2,1659.2,63.5,10.1,765.8,47.1,26.55,1

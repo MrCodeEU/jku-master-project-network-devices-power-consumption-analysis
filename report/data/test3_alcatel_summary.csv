@@ -1,0 +1,9 @@
+Phase,Group,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,DataPoints,EthThroughputMbps,EthThroughputStdMbps
+Bare Minimum,1,1140.0,0.0,1140.0,1140.0,12,,
++Cable 1,1,1361.0,65.9,1280.0,1430.0,10,,
++Cable 2,1,1484.4,30.9,1430.0,1500.0,9,,
++start wifi,3,1903.3,40.0,1850.0,1930.0,9,,
++client +1,4,1968.9,36.9,1930.0,2000.0,9,,
++client +1,4,2300.0,532.2,1930.0,3070.0,10,,
+WiFi Load,5,2205.5,261.2,1850.0,2640.0,22,,
+All MAX Load,6,2241.8,51.7,2070.0,2280.0,22,192.4,6.8

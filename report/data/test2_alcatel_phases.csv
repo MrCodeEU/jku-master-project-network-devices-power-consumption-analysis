@@ -1,0 +1,8 @@
+PhaseStartSeconds,PhaseName
+0.0,Pre-Test Idle
+300.0,Step 1: 25 Mbps
+595.0,Step 2: 50 Mbps
+900.0,Step 3: 75 Mbps
+1200.0,Step 4: 100 Mbps
+1495.0,Sustained 100 Mbps
+1800.0,Post-Test Idle

@@ -3,41 +3,69 @@
 \section{Conclusion and Outlook}
 \label{sec:conclusion}
 
-\todo{Expand this section once all tests are completed.}
-
 \subsection{Summary of Findings}
 
 This work presented a custom-built, open-source test framework for automated power consumption measurement of consumer network devices.
-Using a DECT~200 smart plug for power metering and a Go-based load generator with a web-based analysis dashboard, we conducted the first of several planned test campaigns: an incremental port load test across four consumer-grade devices (Fritzbox~7530, Huawei~EG8245W5-8T, Asus~RT-AX68U, and Alcatel~HH40V).
+Using a DECT~200 smart plug for power metering and a Go-based load generator with a web-based analysis dashboard, we conducted five test campaigns across four consumer-grade devices (Fritzbox~7530, Huawei~EG8245W5-8T, Asus~RT-AX68U, and Alcatel~HH40V), addressing eight research questions.
 
-Key findings from Test~1 include:
-\begin{itemize}
-    \item \textbf{RQ1 (Port Count):} All devices show measurable power increases under load (6--16\% above idle), but the per-port increment is small (30--175\,mW per port). CPU-limited devices (Fritzbox) can show non-monotonic power profiles.
-    \item \textbf{RQ4 (Idle Power):} Idle power ranges from 1.85\,W (Alcatel) to 8.96\,W (Huawei), translating to €4--€20 annual energy cost at €0.25/kWh.
-    \item \textbf{RQ8 (Rated vs.\ Real):} Under Ethernet-only load, devices reach only 21--40\% of their rated maximum power, suggesting that Wi-Fi radios and other subsystems account for a significant portion of the power budget.
-\end{itemize}
+Key findings:
+\begin{description}
+    \item[RQ1 (Port Count vs.\ Power):]
+    All devices show measurable power increases under load (6--16\% above idle), but the per-port increment under full traffic is small (30--175\,mW).
+    CPU-limited devices (Fritzbox) show non-monotonic power profiles due to CPU saturation.
+
+    \item[RQ2 (Per-Port PHY Cost):]
+    Connecting an idle GbE cable costs 265--302\,mW on average; Fast Ethernet costs $\sim$172\,mW.
+    The per-port idle overhead dominates over the marginal cost of actual data transmission (Test~2 showed only 4.9--7.1\% power increase from idle to full line rate).
+
+    \item[RQ3 (Power vs.\ Throughput):]
+    Power scales sub-linearly with throughput for all devices.
+    The base platform power dominates, and reducing idle power (through device selection or power-saving modes) has far greater impact than limiting throughput.
+
+    \item[RQ4 (Idle Power):]
+    Bare-minimum power varies from 1.14\,W (Alcatel) to 6.34\,W (Huawei).
+    With all subsystems idle, power ranges from 2.30\,W (Alcatel) to 7.99\,W (Asus), translating to annual costs of \euro{5}--\euro{18} at \euro{0.25}/kWh.
+
+    \item[RQ5 (WiFi Radio Cost):]
+    Idle WiFi radios are the dominant subsystem power consumer, adding 0.4--2.7\,W depending on device and number of bands.
+    WiFi power per unit throughput is 7--8$\times$ higher than wired Ethernet.
+    The Asus achieves the best WiFi energy efficiency (66\,Mbps/W at 5\,GHz near) while the Huawei is the least efficient (3.7\,Mbps/W at 2.4\,GHz near).
+    Distance effects are device- and band-dependent, not universal.
+
+    \item[RQ6 (Power-Saving Modes):]
+    The Fritzbox eco mode is the most effective, saving 474--670\,mW (7--19\%) across all subsystems, at the cost of Ethernet throughput reduction to $\sim$95\,Mbps per port.
+    Asus and Huawei TX power reduction yields minimal or inconsistent savings.
+
+    \item[RQ7 (Rated vs.\ Real Maximum):]
+    Even with all subsystems at maximum load, devices reach only 22--47\% of their rated power.
+    Manufacturer specifications include substantial headroom, likely accounting for worst-case scenarios (e.g., DSL modem active, maximum client count, sustained retransmissions).
+
+    \item[RQ8 (Bridge Mode):]
+    Splitting an ISP modem into bridge mode plus a dedicated router increases total system idle power by 85.6\% ($\sim$16.6\,W combined vs.\ $\sim$8.96\,W standalone).
+    Bridge mode is not energetically favorable for power reduction.
+\end{description}
 
 \subsection{Limitations}
 
-\todo{Expand limitations section after completing all tests.}
-
-The current results are subject to several limitations:
+The results are subject to several limitations:
 \begin{itemize}
-    \item The DECT~200's $\sim$70\,mW resolution limits precision for fine-grained per-port analysis.
-    \item All traffic targeted the device's CPU (UDP to device IP) rather than exercising the hardware switching fabric.
-    \item Only Ethernet ports were tested; Wi-Fi was not yet exercised.
+    \item The DECT~200 smart plug has a resolution of $\sim$70\,mW and a native update interval of $\sim$2\,min (improved to $\sim$15\,s via Home Assistant polling hack), limiting precision for fine-grained per-port analysis.
+    \item All Ethernet traffic targeted the device's CPU (UDP to device IP) rather than exercising the hardware switching fabric. Real-world forwarding workloads may show different power profiles.
+    \item WiFi throughput in Test~3 was measured manually via the iperf3 app on smartphones, introducing human observation error. Test~4 provides more precise automated WiFi measurements.
+    \item The Fritzbox developed an intermittent port anomaly during Test~3 that required throughput interpolation from working ports. Power measurements were unaffected.
+    \item Tests were conducted with a single sample of each device. Manufacturing variation and firmware differences may affect reproducibility.
+    \item No zero-cable baseline was measured in Test~1 (cables were already connected during the pre-test phase), which is why Test~3 was needed to isolate the true bare-minimum power floor.
 \end{itemize}
 
 \subsection{Future Work}
 
-\todo{Update with actual results from remaining tests.}
-
-Four additional test campaigns (Section~\ref{sec:test-setups}) are planned to address the remaining research questions:
+Possible extensions of this work include:
 \begin{itemize}
-    \item Test~2: Throughput scaling and link speed comparison (RQ2 + RQ3) --- using the load generator's ramp-step feature at both 1\,Gbps and 100\,Mbps link speeds.
-    \item Test~3: Energy efficiency and extended idle (RQ4 + RQ6) --- 2-hour idle measurements with EEE toggling and a no-cable standby baseline.
-    \item Test~4: Wi-Fi impact and maximum load (RQ5 + RQ7 + RQ8) --- Wi-Fi band/distance/client-type variations, culminating in an all-subsystems-active stress test.
-    \item Test~5: ISP bridge mode comparison (RQ9) --- Huawei standalone vs.\ Huawei bridge + Asus router.
+    \item Long-term (24h+) idle power measurements to capture potential sleep-state transitions and diurnal power patterns.
+    \item Layer~2 switching load tests to measure power under realistic forwarding workloads rather than CPU-targeted traffic.
+    \item Testing additional device categories: managed switches, mesh WiFi systems, and enterprise access points.
+    \item Investigating the relationship between CPU temperature and power consumption (accessible via web interfaces on some devices).
+    \item Measuring the power impact of firmware updates and security features (firewall rules, VPN, QoS).
 \end{itemize}
 
 %%

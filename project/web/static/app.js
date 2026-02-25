@@ -203,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 protocol: document.getElementById('protocol')?.value,
                 targetMAC: document.getElementById('target_mac')?.value,
                 packetSize: document.getElementById('packet_size')?.value,
+                iperf3Reverse: document.getElementById('iperf3_reverse')?.checked,
                 // Store interface configs by name
                 interfaceConfigs: {}
             };
@@ -257,6 +258,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (config.targetMAC) document.getElementById('target_mac').value = config.targetMAC;
             if (config.packetSize) document.getElementById('packet_size').value = config.packetSize;
+            if (typeof config.iperf3Reverse === 'boolean') {
+                const iperf3ReverseCheckbox = document.getElementById('iperf3_reverse');
+                if (iperf3ReverseCheckbox) iperf3ReverseCheckbox.checked = config.iperf3Reverse;
+            }
             
             // Restore load enabled checkbox
             if (typeof config.loadEnabled === 'boolean') {
@@ -422,20 +427,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Protocol change handler - show/hide Layer 2 config
+    // Protocol change handler - show/hide protocol-specific config
     const protocolSelect = document.getElementById('protocol');
     const layer2Config = document.getElementById('layer2Config');
+    const iperf3Config = document.getElementById('iperf3Config');
     const targetIPGroup = document.getElementById('target_ip')?.closest('.form-group');
     const targetPortGroup = document.getElementById('target_port')?.closest('.form-group');
+    const packetSizeGroup = document.getElementById('packet_size')?.closest('.form-group');
+    const protocolHelp = document.getElementById('protocolHelp');
+    const interfaceSection = document.getElementById('interfaceList')?.closest('.form-group');
+    const refreshInterfacesBtnGroup = document.getElementById('refreshInterfacesBtn');
 
     if (protocolSelect && layer2Config) {
         protocolSelect.addEventListener('change', () => {
-            const isLayer2 = protocolSelect.value === 'layer2';
+            const protocol = protocolSelect.value;
+            const isLayer2 = protocol === 'layer2';
+            const isIperf3 = protocol === 'iperf3';
+
+            // Layer 2 config
             layer2Config.style.display = isLayer2 ? 'grid' : 'none';
 
-            // Hide IP/Port for Layer 2, show for TCP/UDP
+            // iperf3 config
+            if (iperf3Config) iperf3Config.style.display = isIperf3 ? 'block' : 'none';
+
+            // Hide IP/Port for Layer 2, show for others
             if (targetIPGroup) targetIPGroup.style.display = isLayer2 ? 'none' : 'block';
             if (targetPortGroup) targetPortGroup.style.display = isLayer2 ? 'none' : 'block';
+
+            // Hide packet size for iperf3 (iperf3 manages its own packet size)
+            if (packetSizeGroup) packetSizeGroup.style.display = isIperf3 ? 'none' : 'block';
+
+            // Hide interface list, workers, ramp settings for iperf3
+            if (interfaceSection) interfaceSection.style.display = isIperf3 ? 'none' : 'block';
+            if (refreshInterfacesBtnGroup) refreshInterfacesBtnGroup.style.display = isIperf3 ? 'none' : 'inline-block';
+
+            // Update help text
+            if (protocolHelp) {
+                if (isLayer2) {
+                    protocolHelp.textContent = 'Layer 2 requires admin privileges and target MAC address';
+                } else if (isIperf3) {
+                    protocolHelp.textContent = 'iperf3 must be installed on this machine; run iperf3 -s on the target device';
+                } else {
+                    protocolHelp.textContent = '';
+                }
+            }
+
+            // Default port for iperf3
+            const targetPortInput = document.getElementById('target_port');
+            if (isIperf3 && targetPortInput) {
+                if (targetPortInput.value === '80' || targetPortInput.value === '9') {
+                    targetPortInput.value = '5201';
+                }
+            }
         });
 
         // Trigger initial state
@@ -1472,6 +1515,7 @@ document.addEventListener('DOMContentLoaded', () => {
             targetMAC: document.getElementById('target_mac')?.value || '',
             protocol: document.getElementById('protocol').value,
             packetSize: document.getElementById('packet_size').value,
+            iperf3Reverse: document.getElementById('iperf3_reverse')?.checked || false,
             interfaceConfigs: interfaceConfigs
         };
     }

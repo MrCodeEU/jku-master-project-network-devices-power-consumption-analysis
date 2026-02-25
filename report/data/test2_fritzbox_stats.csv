@@ -1,0 +1,8 @@
+Phase,AvgPowerMW,StdDevPowerMW,MinPowerMW,MaxPowerMW,AvgThroughputMbps,StdDevThroughputMbps,AvgTargetMbps,DurationSeconds,DataPoints,EfficiencyMbpsPerW
+Pre-Test Idle,4072.5,126.6,4000.0,4290.0,0.0,0.0,0,295,60,0.00
+Step 1: 250 Mbps,4235.0,139.8,4000.0,4360.0,249.2,0.6,250,295,60,58.85
+Step 2: 500 Mbps,4342.5,30.6,4290.0,4360.0,488.3,0.6,500,295,60,112.45
+Step 3: 750 Mbps,4221.8,91.7,4140.0,4360.0,726.1,1.0,750,270,55,171.99
+Step 4: 1000 Mbps,3913.8,154.4,3790.0,4140.0,907.1,53.1,1000,320,65,231.77
+Sustained 1000 Mbps,3842.5,30.6,3790.0,3860.0,921.7,21.3,1000,295,60,239.86
+Post-Test Idle,3584.2,161.7,3430.0,3860.0,0.0,0.0,0,295,60,0.00
