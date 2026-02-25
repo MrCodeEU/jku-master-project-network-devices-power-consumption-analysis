@@ -1,0 +1,9 @@
+{
+  "description": "A web-based test runner for measuring power consumption and network throughput of devices under test, supporting UDP, TCP, and Layer 2 load generation with real-time FritzBox smart plug monitoring and SQLite-backed test storage.",
+  "featured": false,
+  "tags": ["research", "networking", "power-consumption", "measurement", "sqlite", "master-project"],
+  "images": [
+    "https://picsum.photos/seed/jku-power1/800/450",
+    "https://picsum.photos/seed/jku-power2/800/450"
+  ]
+}
