@@ -4,44 +4,96 @@
 
 % --- Standards ---
 
-@standard{bib:ieee-802-3az,
-    title = {{IEEE Standard for Ethernet---Amendment 5: Media Access Control Parameters, Physical Layers, and Management Parameters for Energy-Efficient Ethernet}},
-    organization = {IEEE},
-    number = {802.3az-2010},
-    year = {2010},
-    doi = {10.1109/IEEESTD.2010.5621025},
+@ARTICLE{bib:ieee-802-3az,
+  author={},
+  journal={IEEE Std 802.3az-2010 (Amendment to IEEE Std 802.3-2008)},
+  title={IEEE Standard for Information technology-- Local and metropolitan area networks-- Specific requirements-- Part 3: CSMA/CD Access Method and Physical Layer Specifications Amendment 5: Media Access Control Parameters, Physical Layers, and Management Parameters for Energy-Efficient Ethernet},
+  year={2010},
+  pages={1-302},
+  doi={10.1109/IEEESTD.2010.5621025}}
+
+@techreport{bib:tr064,
+    title = {{LAN-Side DSL CPE Configuration}},
+    institution = {Broadband Forum},
+    number = {TR-064 Issue 2},
+    year = {2015},
+    url = {https://www.broadband-forum.org/download/TR-064.pdf},
 }
 
-% TODO: Add TR-064 specification reference
-% @techreport{bib:tr064,
-%     title = {{LAN-Side DSL CPE Configuration}},
-%     institution = {Broadband Forum},
-%     number = {TR-064},
-%     year = {2015},
-% }
+% --- Prior Work ---
 
-% --- Energy Efficiency Studies ---
+@article{bib:lanzisera2012,
+    title = {{Data network equipment energy use and savings potential in buildings}},
+    author = {Lanzisera, Steven and Nordman, Bruce and Brown, Richard E.},
+    journal = {Energy Efficiency},
+    volume = {5},
+    pages = {149--162},
+    year = {2012},
+    doi = {10.1007/s12053-011-9136-4},
+}
 
-% TODO: Find and add key references for the following topics:
-% - Home router / CPE power consumption studies
-% - Network equipment energy efficiency benchmarking methodologies
-% - EU Code of Conduct on Energy Consumption of Broadband Equipment
-% - Energy-Efficient Ethernet (EEE) real-world performance studies
+@InProceedings{bib:andrade2013,
+    author = {Andrade-Morelli, Sebasti{\'a}n and Ruiz-S{\'a}nchez, Eduardo and Sendra, Sandra and Lloret, Jaime},
+    title = {{Router Power Consumption Analysis: Towards Green Communications}},
+    booktitle = {Green Communication and Networking},
+    year = {2013},
+    publisher = {Springer Berlin Heidelberg},
+    address = {Berlin, Heidelberg},
+    pages = {28--37},
+    doi = {10.1007/978-3-642-37977-2_3},
+}
 
-% @article{bib:eu-coc-broadband,
-%     title = {{Code of Conduct on Energy Consumption of Broadband Equipment}},
-%     author = {{European Commission Joint Research Centre}},
-%     year = {2023},
-%     note = {Version 8},
-% }
+% --- Devices ---
 
-% @inproceedings{bib:eee-real-world,
-%     title = {{TODO: Find EEE real-world measurement paper}},
-% }
+@misc{bib:dect200,
+    title = {{AVM FRITZ!DECT 200 -- Handbuch (User Manual)}},
+    author = {{AVM GmbH}},
+    url = {https://cdn-reichelt.de/documents/datenblatt/E910/AVM_FRITZ_DECT_200_HB_DEU.pdf},
+    year = {2024},
+    note = {Accessed: 2025},
+}
 
-% @article{bib:home-router-power,
-%     title = {{TODO: Find home router power consumption survey/study}},
-% }
+@misc{bib:datasheet-fritzbox7530,
+    title = {{AVM FRITZ!Box 7530 -- Technical Data Sheet}},
+    author = {{AVM GmbH}},
+    url = {https://asset.conrad.com/media10/add/160267/c1/-/gl/804351123DS00/datasheet-1783471-avm-fritzbox-7530-wi-fi-modem-router-built-in-modem-adsl-vdsl-24-ghz-5-ghz-1200-mbits.pdf},
+    year = {2018},
+    note = {Accessed: 2025},
+}
+
+@misc{bib:datasheet-asus-rtax68u,
+    title = {{ASUS RT-AX68U -- Technical Specifications}},
+    author = {{ASUSTeK Computer Inc.}},
+    url = {https://www.asus.com/networking-iot-servers/wifi-routers/asus-wifi-routers/rt-ax68u/techspec/},
+    year = {2020},
+    note = {Accessed: 2025},
+}
+
+@misc{bib:datasheet-huawei-eg8245,
+    title = {{Huawei EchoLife EG8245W5-8T -- Technical Specifications}},
+    author = {{Huawei Technologies Co., Ltd.}},
+    url = {https://www.scribd.com/document/774390471/1593828050156465},
+    year = {2020},
+    note = {Accessed: 2025},
+}
+
+@misc{bib:datasheet-alcatel-hh40v,
+    title = {{Alcatel HH40V -- User Manual}},
+    author = {{Alcatel}},
+    url = {https://www.alcatelmobile.com/lb/wp-content/uploads/2019/07/180514-HH40V-UM-DE-TR069.pdf},
+    year = {2018},
+    note = {Accessed: 2025},
+}
+
+% --- Energy Data ---
+
+@online{bib:eurostat-electricity,
+    title = {{Electricity price statistics}},
+    author = {{Eurostat}},
+    date = {2024},
+    url = {https://ec.europa.eu/eurostat/statistics-explained/index.php/Electricity_price_statistics},
+    urldate = {2026-03-24},
+}
 
 % --- Tools and Libraries ---
 
@@ -53,7 +105,21 @@
     note = {Accessed: 2025},
 }
 
-% TODO: Add proper gofritz/fritzbox SOAP library reference once confirmed
+@misc{bib:iperf3,
+    title = {{iPerf3 -- The ultimate speed test tool for TCP, UDP and SCTP}},
+    author = {{ESnet / The Regents of the University of California}},
+    url = {https://iperf.fr/},
+    year = {2024},
+    note = {Version 3.x},
+}
+
+@misc{bib:iperf3-android,
+    title = {{iPerf -- Network Speed Test (Android App)}},
+    author = {{uncle}},
+    url = {https://play.google.com/store/apps/details?id=tools.uncle.network},
+    year = {2024},
+    note = {Accessed: 2025},
+}
 
 @misc{bib:chartjs,
     title = {{Chart.js: Simple yet flexible JavaScript charting}},
@@ -70,51 +136,10 @@
     note = {Version 1.18},
 }
 
-% --- Template references (from original) ---
-
-@inproceedings{bib:2013-roland-woot,
-    title = {{Cloning Credit Cards: A combined pre-play and downgrade attack on EMV Contactless}},
-    author = {Roland, Michael and Langer, Josef},
-    booktitle = {7th USENIX Workshop on Offensive Technologies},
-    location = {Washington, DC, USA},
-    publisher = {USENIX},
-    url = {https://www.usenix.org/conference/woot13/workshop-program/presentation/roland},
-    year = {2013},
-    month = AUG
-}
-
-@book{bib:2015-roland-thesis-book,
-    title = {{Security Issues in Mobile NFC Devices}},
-    author = {Roland, Michael},
-    series = {T-Labs Series in Telecommunication Services},
-    publisher = {Springer},
-    address = {Cham},
-    doi = {10.1007/978-3-319-15488-6},
-    isbn = {978-3-319-15487-9},
-    year = {2015},
-    month = JAN
-}
-
-@inproceedings{bib:2021-hoeller-foci,
-	title = {{On the state of V3 onion services}},
-	author = {Höller, Tobias and Roland, Michael and Mayrhofer, René},
-	booktitle = {Proceedings of the ACM SIGCOMM 2021 Workshop on Free and Open Communications on the Internet (FOCI '21)},
-	location = {Virtual},
-	pages = {50--56},
-	publisher = {ACM},
-	doi = {10.1145/3473604.3474565},
-	year = {2021},
-	month = AUG
-}
-
-@inproceedings{bib:2021-hoeller-iiwas,
-	title = {{Analyzing inconsistencies in the Tor consensus}},
-	author = {Höller, Tobias and Roland, Michael and Mayrhofer, René},
-	booktitle = {The 23rd International Conference on Information Integration and Web Intelligence (iiWAS2021)},
-	location = {Linz, Austria},
-	numpages = {10},
-	publisher = {ACM},
-	doi = {10.1145/3487664.3487793},
-	year = {2021},
-	month = NOV
+@online{ha-dect-workaround,
+    title = {Increase Fritz DECT polling intervall for power metering},
+    author = {{Home Assistant Community}},
+    date = {2024},
+    url = {https://community.home-assistant.io/t/increase-fritz-dect-polling-intervall-for-power-metering/679737},
+    urldate = {2026-03-24}
 }

@@ -145,13 +145,61 @@
 %% a package `biblatex', you would use the command `\usepackage{biblatex}'.
 %% 
 
-\usepackage{minted}  % must come before csquotes to avoid fvextra/lineno warning
+\usepackage{xcolor}
+\usepackage{listings}
+\definecolor{codebg}{HTML}{F6F8FA}
+\definecolor{codeframe}{HTML}{D0D7DE}
+\definecolor{codecomment}{HTML}{6A737D}
+\definecolor{codekeyword}{HTML}{D73A49}
+\definecolor{codestring}{HTML}{032F62}
+\definecolor{codeident}{HTML}{005CC5}
+\lstset{
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{codeframe},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  commentstyle=\color{codecomment}\itshape,
+  keywordstyle=\color{codekeyword}\bfseries,
+  stringstyle=\color{codestring},
+  numbers=left,
+  numberstyle=\tiny\color{codecomment},
+  numbersep=8pt,
+  xleftmargin=15pt,
+  framexleftmargin=15pt,
+}
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,yes,no,on,off},
+  keywordstyle=\color{codekeyword}\bfseries,
+  comment=[l]{\#},
+  commentstyle=\color{codecomment}\itshape,
+  morestring=[b]",
+  morestring=[b]',
+  stringstyle=\color{codestring},
+  moredelim=[l][\color{codeident}]{- },
+}
+\lstdefinelanguage{PowerShell}{
+  alsoletter={-},
+  morekeywords={function,if,else,elseif,switch,foreach,for,while,do,return,
+    param,begin,process,end,try,catch,finally,break,continue,
+    Get-NetAdapter,Remove-NetIPAddress,New-NetIPAddress,New-NetRoute,
+    Format-Table,Where-Object,Test-NetConnection},
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{codecomment}\itshape,
+  keywordstyle=\color{codeident}\bfseries,
+  stringstyle=\color{codestring},
+  morestring=[b]",
+  morestring=[b]',
+}
 \usepackage{csquotes}
 \usepackage[backend=biber,citestyle=numeric,sortcites=true,maxcitenames=2,style=ACM-Reference-Format]{biblatex}
 \setcounter{biburlnumpenalty}{100} %% reducing biburl* penalties typically improves URL placement in bibliography
 \setcounter{biburllcpenalty}{100}
 \setcounter{biburlucpenalty}{100}
-\usepackage{todonotes}
 \usepackage{import}
 \usepackage{amsfonts}
 \usepackage{subcaption}
@@ -163,7 +211,7 @@
 \usepackage{pgfplotstable}
 \usepackage{booktabs}
 \usetikzlibrary{fit,shapes,arrows,positioning,patterns}
-%\usepackage{acronym}
+\usepackage{acronym}
 
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -202,9 +250,9 @@
 \subtitle{\texorpdfstring{Technical Report\\%
     \usekomafont{subtitlesmall}%
     \hfill\\%
-    Master Project about the Analysis of Power Consumption of different Home and SME Network Equipment.
+    Master Project about the Analysis of Power Consumption of different Home to SME Network Equipment.
     \hfill\\%
-}{Technical Report -- Master Project about the Analysis of Power Consumption of different Home and SME Network Equipment}}
+}{Technical Report: Master Project about the Analysis of Power Consumption of different Home to SME Network Equipment}}
 
 %% Command \author{name}: sets the author name(s); separate multiple authors with \and; use \prefix{}
 %%   and \suffix{} to add academic titles and suffixes (if needed); use \affiliation{} to add an
@@ -214,9 +262,6 @@
 \author{%
     Michael Reinegger
     \affiliation{Institute of Networks~and~Security}
-    \authornewline
-    \authormail{k12102754@students.jku.at}
-    \authornewline
 }
 
 %% Command \date{YYYY-MM-DD}: set the day of publication (defaults to today)
@@ -226,7 +271,7 @@
 %\partnerlogo{logos/ins}
 
 %% Command \revisionblock{text}: set the document revision block on the title page
-\revisionblock{V0.1 Initial Topic definition + Research Questions + Initial Test Setup and potential future Setup Ideas}
+\revisionblock{V1.0 Complete report: five tests across four devices, all research questions addressed}
 
 %% Command \reportnumber{number}: set the report number
 %\reportnumber{Space for your report number}
@@ -259,9 +304,11 @@
 \tableofcontents
 
 %% Make sure to start the list of acronyms on a new odd page (odd is only relevant in twoside layout)
-%\cleardoubleoddpage
-%% Include list of acronyms (optional and often not necessary)
-%\import{./}{acronyms}
+
+%% Include list of acronyms (optional and often not necessary) (now moved to after TOC, before abstract)
+
+%% Define acronyms early so they are available for use in abstract and main content
+\import{./}{acronyms}
 
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -276,8 +323,16 @@
 \cleardoubleoddpage
 
 \addsec{Abstract}
-\todo{Rewrite abstract in formal academic style. Add: (1) motivation with EU/global energy stats for always-on networking equipment, (2) mention the custom Go-based measurement webapp, (3) summarize key quantitative findings (e.g., idle power ranges, load deltas), (4) state significance / practical recommendations.}
-This project provides a comprehensive analysis of the power consumption of network devices in home and Small and Medium-sized Enterprise (SME) environments. We investigate how factors such as network load, the number of connected clients, and connection types (Ethernet vs. Wi-Fi) influence energy usage. Using a dedicated testbed with automated data collection, we evaluate the real-world power efficiency of various consumer-grade, ISP-provided, and business-grade devices. The findings can lead to reducing energy consumption with more energy-efficient network devices and configurations.
+This report investigates the real world power consumption of four home and \ac{SME} network devices, comparing measurements against manufacturer specifications.
+The devices under test are the \texttt{Fritzbox~7530}, \texttt{Asus~RT-AX68U}, \texttt{Huawei~EG8245W5-8T}, and \texttt{Alcatel~HH40V}.
+
+To measure this properly, I built a custom Go-based web application that generates customizable network load while logging power consumption from a \ac{DECT}~200 smart plug via the FritzBox TR-064 \ac{API}.
+Five tests cover incremental Ethernet port loading, per-port throughput scaling, full subsystem profiling (Ethernet + Wi-Fi + \ac{USB} combined), Wi-Fi distance and band comparison, and bridge-mode efficiency.
+
+Key findings: devices only reach 22--47\% of their provided power supply rated maximum power under full combined load, with my tests.
+Wi-Fi radios are the dominant power consumer when active, drawing 7--8$\times$ more power per megabit than wired Ethernet.
+Running an \ac{ISP} modem in bridge mode alongside a dedicated router increases combined idle power by about 86\% compared to using the modem standalone.
+Built-in eco modes have varying effectiveness: the Fritzbox's eco mode saves 7--19\% but limits Ethernet throughput to $\sim$100\,Mbps/port, while Wi-Fi TX power reduction on the Asus and Huawei yields minimal savings.
 
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -292,19 +347,19 @@ This project provides a comprehensive analysis of the power consumption of netwo
 
 \section{Introduction}
 \label{sec:introduction}
-\todo{Polish introduction prose. Add: opening paragraph with global energy context (cite IEA/EU stats on ICT energy), narrow down to home/SME CPE devices specifically, clearly state the gap (lack of independent, reproducible measurements), state contribution (custom automated test framework + systematic multi-device analysis), brief outline of report structure.}
 
-This project aims to analyze the power consumption of various network devices commonly used in home and small-to-medium enterprise (SME) environments. The equipment under investigation ranges from consumer-grade home routers to ISP-provided devices and business-grade switches and access points. The goal is to create a comprehensive overview of power consumption across different scenarios and usage patterns.
+Consumer to \ac{SME} network routers operate continuously, yet manufacturer specifications typically only state maximum power ratings (e.g., 18\,W or 33\,W). This report aims to quantify the baseline and load-dependent power consumption of these devices in typical configurations.
 
-The analysis will examine several factors that influence power consumption: the number of active Ethernet ports, the number of connected Wi-Fi clients, varying levels of network load and so on. Data will be collected using a smart power meter capable of providing time-based power consumption measurements. This meter is integrated with a monitoring stack (Prometheus and Grafana) to enable automated data collection and visualization.
+The following four devices were tested: a \verb|Fritzbox~7530| (\ac{ISP}-style router, 2018), an \verb|Asus~RT-AX68U| (Wi-Fi~6, 2020), a \verb|Huawei~EchoLife~EG8245W5-8T| (fiber \ac{ONT} from Energie AG), and an \verb|Alcatel~HH40V| (basic single-band, 2018). Stated power ratings range from 10--33\,W. To evaluate real-world power efficiency, power draw was empirically measured across these devices to determine how power consumption changes with Ethernet port count, Wi-Fi load, eco mode, or running in bridge mode.
 
-With this data, we can evaluate the efficiency of these devices under different conditions and identify which configurations are most power-efficient for specific use cases. For example, we can compare whether using an ISP-provided router in bridge mode is more efficient than using a separate router and switch/modem combination. Additionally, the analysis will help determine if some devices should be powered down during periods of low activity, such as overnight, to conserve energy.
+To do this I built a custom Go application that generates controlled \ac{UDP} traffic on each Ethernet interface, polls the \ac{DECT}~200 smart plug via TR-064~\cite{bib:tr064}, and stores everything in a SQLite database. The source code is at \verb|github.com/MrCodeEU/jku-master-project-network-devices-power-consumption-analysis|. 
+
+A few problems occured along the way: the smart plug only updates every two minutes by default (worked around via Home Assistant), one \ac{NIC} port was broken, and some routers had quirks resulting in deviations from the planned protocol -- all covered in the relevant sections.
 
 
 \section{Research Questions}
 \label{sec:research-questions}
-\todo{Consider restructuring RQs into primary (RQ1--RQ3) and secondary (RQ4--RQ8) groups. Add a brief introductory paragraph explaining how these RQs were derived.}
-The following research questions guide this investigation:
+These questions where originally phrased differentlly but naturally changed while testing and running the experiments. The final versions are:
 \begin{enumerate}
     \item[\textbf{RQ1}] How does power consumption change with the number of active Ethernet ports?
     \label{rq:ports}
@@ -312,60 +367,56 @@ The following research questions guide this investigation:
     \label{rq:port-overhead}
     \item[\textbf{RQ3}] How does power consumption scale with network load (idle, 50\%, 100\% utilization of bandwidth)?
     \label{rq:load-scaling}
-    \item[\textbf{RQ4}] Which equipment is suitable for continuous operation and which devices have high idle consumption that makes them candidates for automated shutdown during off-peak hours?
+    \item[\textbf{RQ4}] Which equipment is suitable for continuous operation and which devices have high idle consumption that makes them candidates for automated shutdown during the night?
     \label{rq:idle-suitability}
-    \item[\textbf{RQ5}] How does Wi-Fi affect router power consumption, and how do factors such as frequency band (2.4 vs.\ 5\,GHz), number of connected clients, client device type, and signal strength (distance to access point) influence it?
+    \item[\textbf{RQ5}] How does Wi-Fi affect router power consumption, and how do factors such as frequency band (2.4 vs.\ 5\,GHz), number of connected clients, and signal strength (distance to access point) influence it?
     \label{rq:wifi-impact}
-    \item[\textbf{RQ6}] What is the actual impact of manufacturer-provided power-saving modes (e.g., Fritzbox ``Green Mode,'' Asus scheduling features) on overall power consumption?
+    \item[\textbf{RQ6}] What is the actual impact of manufacturer-provided power-saving modes (e.g., Fritzbox \verb|Green Mode|, Wi-Fi transmission power control) on overall power consumption?
     \label{rq:power-saving}
     \item[\textbf{RQ7}] Does a device's maximum power consumption rating correlate with its real-world power usage under typical operating conditions, and what does it take to reach that level?
     \label{rq:rated-vs-real}
-    \item[\textbf{RQ8}] How efficient is ISP-provided equipment (e.g., Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment?
+    \item[\textbf{RQ8}] How efficient is \ac{ISP}-provided equipment (e.g., Huawei router or Fritzbox 7530) when operating in bridge mode compared to dedicated networking equipment?
     \label{rq:bridge-mode}
 \end{enumerate}
 
 \section{Setup}
 \label{sec:setup}
     \subsection{Hardware}
-    List of available network devices: (That I have lying around)
+    The four devices under test are routers and modems I had available -- a mix of \ac{ISP}-provided equipment and personally-owned hardware:
     \begin{description}
-        \item[Fritzbox 7530] (2018, 802.11ac, 4$\times$ GbE, 18\,W max)
-        \item[Asus RT-AX68U] (2020, 802.11ax, 4$\times$ GbE, 33\,W max)
-        \item[Alcatel HH40V] (2018, 802.11n, 2$\times$ 100 Mbps, 10\,W max)
-        \item[Huawei EchoLife EG8245W5-8T] (2020, 802.11ax, 4$\times$ GbE, 24\,W max)
+        \item[Fritzbox 7530] (2018, 802.11ac, 4$\times$ \ac{GbE}, rated 18\,W max~\cite{bib:datasheet-fritzbox7530}) -- \ac{ISP}-style ADSL/VDSL router, also used as the dedicated power-data collection device
+        \item[Asus RT-AX68U] (2020, 802.11ax, 4$\times$ \ac{GbE}, rated 33\,W max~\cite{bib:datasheet-asus-rtax68u}) -- high-end consumer Wi-Fi~6 router
+        \item[Huawei EchoLife EG8245W5-8T] (2020, 802.11ax, 4$\times$ \ac{GbE}, rated 24\,W max~\cite{bib:datasheet-huawei-eg8245}) -- fiber/GPON \ac{ONT} modem provided by Energie AG
+        \item[Alcatel HH40V] (2018, 802.11n, 2$\times$ 100\,Mbps, rated 10\,W max~\cite{bib:datasheet-alcatel-hh40v}) -- basic budget \ac{ISP} modem
     \end{description}
     \subsection{Sampling Rate and Accuracy of Power Meter}
-    The exact sampling rate of the power meter is not specified in its documentation. However, for the purpose of this analysis, Prometheus is configured to sample data every 10 seconds, which should be sufficient for most tests. The power measurement accuracy is rated at $\pm 100$\,mW for readings below 5\,W and $\pm 2\%$ for readings above 5\,W.
-   
-    After some testing i found the sampe rate of the power meter to be around once every 2 minutes. This is quite slow and makes it hard to measure short load spikes for example.
-    Because of that longer test phases are needed to get meaningful data.
+    The \ac{DECT}~200 accuracy is rated at $\pm 100$\,mW below 5\,W and $\pm 2$\% above 5\,W~\cite{bib:dect200}, giving $\sim$70\,mW effective resolution as per my testing which is sufficient for this project.
 
-    But i discovered that there exists a workaround to increase the polling rate of the power meter by using the a simple home assistant script that set the power meter to "on" every 15 seconds to get more frequent measurements.
-
+    By default the plug only updates its reading every two minutes. Longer phases are therefore needed for meaningful averages -- which is why Test~1 is significantly longer than the others. The workaround (found after the first test): the \ac{DECT}~200 refreshes whenever it receives any command. A Home Assistant automation sends \verb|turn on| every 15 seconds, and the test app polls via TR-064 every 5 seconds, effectively getting a fresh reading every $\sim$15\,s \cite{ha-dect-workaround}.
     % code for home assistant script
-    \begin{minted}{yaml}
-        alias: Automation - Nudge FritzDECT Smart Plug
-        description: ""
-        triggers:
-        - trigger: time_pattern
-            seconds: /15
-        conditions:
-        - condition: state
-            entity_id: switch.fritz_dect_200
-            state: "on"
-        - condition: time
-            after: "06:30:00"
-            before: "23:59:00"
-        actions:
-        - action: switch.turn_on
-            target:
-            entity_id: switch.fritz_dect_200
-        mode: single
-    \end{minted}
+    \begin{lstlisting}[language=yaml]
+alias: Automation - Nudge FritzDECT Smart Plug
+description: ""
+triggers:
+  - trigger: time_pattern
+    seconds: /15
+conditions:
+  - condition: state
+    entity_id: switch.fritz_dect_200
+    state: "on"
+  - condition: time
+    after: "06:30:00"
+    before: "23:59:00"
+actions:
+  - action: switch.turn_on
+    target:
+      entity_id: switch.fritz_dect_200
+mode: single
+    \end{lstlisting}
 
     \subsection{Initial Testing Setup}
-    Initial testing setup, shown in figure \ref{fig:initial_network_layout}, uses the Fritzbox to connect to the Power Meter using DECT.
-    Then the Fritzbox is connected to my home network such that I can reach the Fritzbox from my NanoPi Neo3.
+    The setup (Figure~\ref{fig:initial_network_layout}) uses a dedicated FritzBox~7490 as a ``data collector'' that is never under test itself -- it hosts the \ac{DECT}~200 base station and provides the TR-064 \ac{API}, while the \ac{DUT} is plugged into the smart plug. This separation is critical: under heavy \ac{UDP} load the \ac{DUT}'s management \ac{API} becomes unresponsive, causing measurement gaps when the same device is used for both.
+
         \begin{figure}[H]
             \centering
             \includegraphics[width=0.8\textwidth]{images/initial_network_layout.png}
@@ -373,60 +424,66 @@ The following research questions guide this investigation:
             \label{fig:initial_network_layout}
         \end{figure}
 
-    One can already see, in Figure \ref{fig:grafana_power_consumption}, the larger power consumption when running \texttt{iperf} in the first third. Everywhere else the small spikes are something that happens periodically.
-    However, I am not able to say what exactly causes these small spikes yet.
+    Figure~\ref{fig:grafana_power_consumption} shows an early Grafana dashboard from the first exploratory measurements. The power jump during the iperf run is already visible; the periodic spikes later are most likely internal FritzBox background activity.
 
         \begin{figure}[H]
             \centering
             \includegraphics[width=0.8\textwidth]{images/grafana_power_consumption.png}
-            \caption{Grafana Dashboard showing Fritzbox Power Consumption}
+            \caption{Early Grafana dashboard showing FritzBox power consumption during an initial iperf test.}
             \label{fig:grafana_power_consumption}
         \end{figure}
 
-    Now the device to test can be connected to the power meter and the Fritzbox can collect the power consumption data.
-    Also, the device to test can be connected to the home network and be put under load without interfering with the data collection.
-    This was a problem as I initially wanted to test the FritzBox, that is connected to the power meter, itself but that caused data loss due to the API of the Fritzbox being unresponsive under load.
+    \subsubsection{Getting Network Connectivity Right}
+    \label{sec:network-setup}
+    The test PC has a 4-port 2.5\,\ac{GbE} \ac{NIC}, but port~4 turned out to be broken (links up, drops all frames). The workaround was three \ac{NIC} ports plus the motherboard Intel I225-V port.
 
-    \subsection{Potential future Setup Ideas}
-    Since the FritzBox allows data collection of smart home devices via the TR064 API we can use e.g. gofritz https://github.com/nitram509/gofritz to create a script
-    that collects the data while also being able to create load for the testing devices/automate scenarios and therefore create a fully automated testing setup that can also annotate
-    the collected data with the current load situation (low load, high load, testing different amount of clients, LAN cables connected, etc.).
-    Maybe even a Web UI where one can directly annotate the data for manual testing. Like click button to start and enter Text of test e.g. Connect 5 LAN cables. And then click stop to end the test and maybe also directly export the data and or screenshots of the graphs.
+    Each \ac{DUT} uses a different default subnet, so the test PC interfaces needed manual IP configuration before each run. Example for the Fritzbox (192.168.188.x):
+
+    \begin{lstlisting}[language=PowerShell]
+# Remove old addresses and assign FritzBox subnet IPs
+Remove-NetIPAddress -InterfaceAlias "Ethernet 5" -Confirm:$false -ErrorAction SilentlyContinue
+New-NetIPAddress -InterfaceAlias "Ethernet 5" -IPAddress 192.168.188.3 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 7" -IPAddress 192.168.188.4 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet"   -IPAddress 192.168.188.5 -PrefixLength 16
+New-NetIPAddress -InterfaceAlias "Ethernet 6" -IPAddress 192.168.188.6 -PrefixLength 16
+    \end{lstlisting}
+
+    Subnets per device: FritzBox 192.168.188.x, Huawei 192.168.18.x, Asus 192.168.51.x, Alcatel 192.168.1.x.
+    Static host routes were added so each interface reached the \ac{DUT}'s management IP without relying on Windows' routing:
+
+    \begin{lstlisting}[language=PowerShell]
+# Routes to Huawei gateway, different metric per interface
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet 5" `
+    -NextHop "0.0.0.0" -RouteMetric 2
+New-NetRoute -DestinationPrefix "192.168.18.1/32" -InterfaceAlias "Ethernet 7" `
+    -NextHop "0.0.0.0" -RouteMetric 3
+    \end{lstlisting}
+
+    Connectivity was verified with \texttt{ping} and \texttt{Test-NetConnection} before each run via the test app's web UI.
 
     \subsection{Automating Testing and Data Collection}
     \label{sec:automation}
-    \todo{Polish prose into formal academic style throughout this subsection.}
-    To enable reproducible, automated measurements, we developed a custom web application with a Go backend and a JavaScript frontend.
-    The source code is available at \texttt{github.com/MrCodeEU/jku-master-project-network-devices-power-consumption-analysis}.
+    To make measurements reproducible, I built a custom web application with a Go backend and JavaScript frontend. Source at \texttt{github.com/MrCodeEU/jku-master-project-network-devices-power-consumption-analysis}.
 
     \subsubsection{Architecture Overview}
-    The application consists of several components:
+    The application consists of a few cooperating components:
     \begin{description}
-        \item[Test Runner (\texttt{runner.go})] Orchestrates test execution in three phases: pre-test baseline, load test (with per-interface ramping), and post-test baseline. Each phase duration, interface activation order, and ramp steps are configurable via the web UI.
-        \item[Load Generator (\texttt{loadgen.go})] Generates network traffic via UDP flooding, TCP connections, or raw Layer~2 Ethernet frames. Per-interface rate limiting is implemented using a spin-wait loop with nanosecond precision. The generator supports configurable packet sizes, worker counts per interface, and target throughput levels.
-        \item[Power Meter Interface (\texttt{fritzbox.go})] Reads real-time power consumption from a FritzBox DECT~200 smart plug via the TR-064 SOAP API, using the \texttt{gofritz} library. A separate FritzBox (not the device under test) is used for data collection to avoid measurement interference.
-        \item[Web Server (\texttt{server.go})] Exposes a REST API and serves the frontend. Real-time data streaming to the browser uses Server-Sent Events (SSE). Test results are persisted in an SQLite database with full configuration, time-series data, and computed per-phase statistics.
-        \item[Analysis Dashboard (\texttt{analysis.js})] A client-side analysis page that loads test data from the database or imported CSV files. It computes per-phase statistics (average, standard deviation, min/max power and throughput, efficiency in Mbps/W) and renders interactive Chart.js visualizations. Export options include CSV, Excel, and pgfplots-compatible formats for direct use in \LaTeX\ reports.
+        \item[Test Runner (\texttt{runner.go})] Orchestrates three phases (pre-test baseline, load with per-interface ramping, post-test baseline). Durations, interface order, and ramp steps are all configurable from the web UI.
+        \item[Load Generator (\texttt{loadgen.go})] Generates \ac{UDP} flooding, \ac{TCP}, or raw L2 frames. Per-interface rate limiting uses nanosecond-precision spin-wait. \ac{UDP} flooding was the mode used for all Ethernet tests.
+        \item[Power Meter Interface (\texttt{fritzbox.go})] Reads power from the \ac{DECT}~200 via TR-064 \ac{SOAP}~\cite{bib:tr064} using \texttt{gofritz}~\cite{bib:gofritz}. Always talks to the dedicated collection FritzBox, never the \ac{DUT}.
+        \item[Web Server (\texttt{server.go})] REST \ac{API} + \ac{SSE} for real-time browser streaming. Results persisted in SQLite.
+        \item[Analysis Dashboard (\texttt{analysis.js})] Computes per-phase stats (avg, std dev, min/max, Mbps/W) and renders Chart.js visualizations. Exports \ac{CSV}, Excel, and pgfplots \LaTeX~\cite{bib:pgfplots} -- the latter is how some of the figures in this report were generated.
     \end{description}
 
     \subsubsection{Load Generation Approach}
-    \todo{Add a table comparing TCP vs UDP vs Layer~2 performance.}
-    We evaluated three traffic generation methods:
-    \begin{itemize}
-        \item \textbf{TCP}: Largely rejected by devices under test; achieved only 60--80\,Mbps as most consumer routers drop or rate-limit unsolicited TCP connections to their management interface.
-        \item \textbf{UDP flooding}: The primary method used. Achieves near line-rate throughput (e.g., 3.85\,Gbps aggregate on the Huawei EG8245W5-8T across 4$\times$1\,GbE ports). Uses 1400-byte packets with 16 workers per interface and batched sending (10 packets per sleep cycle).
-        \item \textbf{Layer~2 raw frames}: Implemented via \texttt{libpcap} for direct Ethernet frame injection. On Windows, throughput was limited to approximately 550--600\,Mbps due to OS-level packet scheduling constraints.
-    \end{itemize}
-    UDP flooding was selected as the primary load generation method for Ethernet load testing due to its ability to saturate gigabit links reliably across all tested devices.
+    Three methods were tried: \textbf{\ac{TCP}} topped out at 60--80\,Mbps (routers rate-limit unsolicited connections to their own IP in some way i suppose). \textbf{Raw L2 frames} via \texttt{libpcap} were capped at $\sim$550\,Mbps on Windows due to OS scheduling, this could have been improved with different libraries or approaches maybe but \ac{UDP} flooding was sufficient. \textbf{\ac{UDP} flooding} near line-rate (3.85\,Gbps aggregate on the Huawei at 4$\times$1\,\ac{GbE}) using 1400-byte packets, 16 workers/interface, 10-packet batches.
 
-    In addition to the custom UDP/TCP/Layer~2 load generator, \textbf{iperf3} was used for Wi-Fi throughput testing.
+    All traffic targets the \ac{DUT}'s own IP address, forcing \ac{CPU} processing -- similar to heavy NAT load, not pure L2 switching. While this is not a perfect emulation, as the cpu load will be significantlly higher then for real-world traffic, it provides a consistent and repeatable load that stresses the device's processing capabilities, and forcing higher power consuption.
+
+    In addition to the custom \ac{UDP}/\ac{TCP}/Layer~2 load generator, \textbf{iperf3}~\cite{bib:iperf3} was used for Wi-Fi throughput testing.
     The load generation tool integrates iperf3 as a subprocess, parsing its per-second output to record throughput alongside power data.
-    For phone-to-phone Wi-Fi load tests (Test~3), an Android iperf3 app was used to generate traffic between two smartphones connected to the DUT's Wi-Fi network.
-    For Wi-Fi-to-LAN tests (Test~4), the iperf3 server ran on the test PC while a Wi-Fi client device acted as the iperf3 client, routing traffic through the DUT.
-
-    \subsubsection{Power Meter Polling Rate}
-    The FritzBox DECT~200 smart plug natively updates its power reading only approximately once every two minutes, which is insufficient for capturing transient power behavior. To increase the effective polling rate, a Home Assistant automation was employed that sends a ``turn on'' command to the already-on smart plug every 15 seconds. This triggers the DECT~200 to refresh its power reading, achieving an effective polling interval of approximately 15 seconds. The test application then queries the updated value via TR-064 every 5 seconds.
-    \todo{Add citation for TR-064 protocol specification and gofritz library.}
+    For phone-to-phone Wi-Fi load tests (Test~3), an Android iperf3 app~\cite{bib:iperf3-android} was used to generate traffic between two smartphones connected to the \ac{DUT}'s Wi-Fi network.
+    For Wi-Fi-to-\ac{LAN} tests (Test~4), the iperf3 server ran on the test PC while a Wi-Fi client device acted as the iperf3 client, routing traffic through the \ac{DUT}.
 
 \input{04-test-setup}
 
@@ -443,12 +500,13 @@ The following research questions guide this investigation:
 %% 
 %% (Optionally) let the bibliography start on a new odd page (odd is only relevant in twoside layout)
 %\cleardoubleoddpage
+\newpage
 \printbibliography
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
+%\newpage
 %% Begin with the appendix part (all further sections will be appendices)
-\appendix
+%\appendix
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 
@@ -457,10 +515,12 @@ The following research questions guide this investigation:
 
 %% Make sure to start the appendix on a new odd page (odd is only relevant in twoside layout)
 %\cleardoubleoddpage
-\section{An Appendix}
-\label{app:an-appendix}
+%\section{Device Default Settings}
+%\label{app:device-defaults}
 
-Fritzbox Web UI password: Ins2025 Wi-Fi password: default (printed on router)
+%Each device was configured with its factory default settings at the start of testing unless otherwise noted.
+%Wi-Fi credentials and management interface passwords were changed to known values for the duration of the tests but are not published here.
+%The FritzBox used for data collection (not under test) was connected to the home network and its management API accessed via the home LAN.
 
 %% 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

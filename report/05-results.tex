@@ -4,15 +4,15 @@
 \section{Results: Incremental Port Load Test}
 \label{sec:results}
 
-This section presents the results of Test~1 (Section~\ref{sec:test-incremental-port-load}), which incrementally loads 1--4 Ethernet ports with maximum UDP traffic on all four devices.
+This section presents the results of Test~1 (Section~\ref{sec:test-incremental-port-load}), which incrementally loads 1--4 Ethernet ports with maximum \ac{UDP} traffic on all four devices.
 
 % ---------------------------------------------------------------------------
 \subsection{Power Time-Series}
 \label{sec:per-device-results}
 % ---------------------------------------------------------------------------
 
-Figure~\ref{fig:test1_power_all} shows the power consumption time-series for all four devices.
-Dashed vertical lines mark phase transitions; horizontal dashed lines indicate the idle baseline.
+Figure~\ref{fig:test1_power_all} shows the power consumption over time for all four devices.
+Dashed vertical lines mark phase transitions and horizontal dashed lines indicate the idle baseline.
 
 \begin{figure}[H]
     \centering
@@ -97,26 +97,26 @@ Dashed vertical lines mark phase transitions; horizontal dashed lines indicate t
         \caption{Alcatel HH40V (2 ports only)}
         \label{fig:alcatel_power}
     \end{subfigure}
-    \caption{Test~1 power consumption over time for all devices. Phases: Idle $\rightarrow$ 1\,Port $\rightarrow$ 2\,Ports $\rightarrow$ 3\,Ports $\rightarrow$ 4\,Ports $\rightarrow$ Post. The Fritzbox shows non-monotonic behaviour due to CPU saturation at 3--4 ports. The Huawei and Asus scale monotonically.}
+    \caption{Test~1 power consumption over time for all \ac{DUT}s.}
     \label{fig:test1_power_all}
 \end{figure}
 
-The Fritzbox~7530 showed a CPU bottleneck: throughput \emph{decreased} from $\sim$2483\,Mbps at 2~ports to $\sim$1827\,Mbps at 4~ports, while power stayed flat around 5000--5130\,mW.
-The Huawei and Asus both achieved $\sim$3815\,Mbps at 4~ports with monotonic power increases of only +548\,mW and +707\,mW respectively.
-The Alcatel (2$\times$100\,Mbps) reached 257\,Mbps with +222\,mW increase.
+The \verb|Fritzbox~7530| hit a \ac{CPU} bottleneck: throughput actually \emph{decreased} from $\sim$2483\,Mbps at 2~ports to $\sim$1827\,Mbps at 4~ports as the \ac{CPU} saturated, while power stayed flat around 5000--5130\,mW. More ports, less throughput but same power consumption.
+The Huawei and Asus both hit $\sim$3815\,Mbps at 4~ports with clean monotonic power increases of only +548\,mW and +707\,mW respectively.
+The Alcatel (2$\times$100\,Mbps) topped out at 257\,Mbps with a +222\,mW increase.
 
 % ---------------------------------------------------------------------------
 \subsection{Cross-Device Comparison and RQ Analysis}
 \label{sec:cross-device-comparison}
 % ---------------------------------------------------------------------------
 
-Table~\ref{tab:results-summary} summarises all key metrics.
+Table~\ref{tab:results-summary} summarises the test findings as well as some additional observations and annual costs with an average power price of 0.25 \euro{} per kWh~\cite{bib:eurostat-electricity}.
 
 \begin{table}[H]
     \centering
-    \caption{Test~1 summary across all four devices. Idle power measured with cables connected but no traffic.}
+    \caption{Test~1 summary across all four devices.}
     \label{tab:results-summary}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r}
         \toprule
         \textbf{Metric} & \textbf{Fritzbox} & \textbf{Huawei} & \textbf{Asus} & \textbf{Alcatel} \\
@@ -137,7 +137,7 @@ Table~\ref{tab:results-summary} summarises all key metrics.
         \begin{axis}[
             width=0.80\linewidth, height=5.5cm,
             xlabel={Number of Loaded Ports},
-            ylabel={Power Increase from Idle (mW)},
+            ylabel={Power Increase (mW)},
             xmin=0, xmax=4.5, ymin=-50, ymax=800,
             xtick={0,1,2,3,4},
             grid=major, grid style={gray!20},
@@ -155,28 +155,23 @@ Table~\ref{tab:results-summary} summarises all key metrics.
             \addlegendentry{Alcatel HH40V}
         \end{axis}
     \end{tikzpicture}
-    \caption{Power increase above idle vs.\ loaded port count. The Fritzbox dips at 3~ports due to CPU saturation reducing throughput (and thus work done). Alcatel has only 2 ports.}
+    \caption{Power increase with idle power as 0\,mW.}
     \label{fig:power_delta_comparison}
 \end{figure}
 
-\paragraph{RQ1 --- Port count vs.\ power.}
-Per-port power increments range from 30--175\,mW, small relative to idle power.
-The Fritzbox shows a non-monotonic profile: power at 3 ports (5040\,mW) is \emph{lower} than at 2 ports (5055\,mW) because CPU saturation reduces throughput and thus total work done.
-The Huawei and Asus scale monotonically---their CPUs are not the bottleneck at 4$\times$1\,Gbps.
+\paragraph{RQ1: Port count vs.\ power.}
+Per-port power increases are surprisingly small at just 30--175\,mW, relative to idle power. Adding load on ports costs much less than the idle cost of having the cables plugged in (see Section \ref{sec:test2-port-overhead}).
+The Fritzbox shows a non-monotonic profile: power at 3 ports (5040\,mW) is \emph{lower} than at 2 ports (5055\,mW) because \ac{CPU} saturation means less actual work is done.
+The Huawei and Asus scale mostly monotonically as their CPUs are not the bottleneck at 4$\times$1\,Gbps.
 
-\paragraph{RQ4 (partial) --- Idle power.}
-Idle power ranges from 1.85\,W (Alcatel) to 8.96\,W (Huawei), a 4.8$\times$ difference.
-Annual idle costs range from \euro{4}--\euro{20} at \euro{0.25}/kWh.
-Note: these are ``cables connected'' measurements, not bare-minimum standby (covered in Test~3).
+\paragraph{RQ4 (partial): Idle power.}
+Idle power ranges from 1.85\,W (Alcatel) to 8.96\,W (Huawei) -- nearly a 5$\times$ spread between the cheapest and most power-hungry device.
+Annual idle costs are \euro{4}--\euro{20} at \euro{0.25}/kWh~\cite{bib:eurostat-electricity}.
+Note: these measurements have cables connected; bare-minimum power (no cables, Wi-Fi off) is covered in Test~3.
 
-\paragraph{RQ7 (partial) --- Rated vs.\ real maximum.}
-Under Ethernet-only load, devices reach only 21--40\% of their rated maximum.
-The remaining headroom is accounted for by WiFi, USB, and other subsystems not exercised in this test (see Test~3 for full-subsystem results).
-
-\paragraph{Measurement notes.}
-The DECT~200 resolution ($\sim$70\,mW steps) limits per-port precision.
-All traffic targeted the device's CPU (UDP to its own IP), not the switching ASIC.
-Transient throughput spikes in some data points are measurement artifacts from the 5-second polling window.
+\paragraph{RQ7 (partial): Rated vs.\ real maximum.}
+With only Ethernet active, devices reach 21--40\% of their rated maximum power. The spec sheet numbers have a lot of headroom.
+Adding Wi-Fi, \ac{USB}, and other subsystems closes the gap further but never fully. See Test~3 for the full picture.
 
 % ===========================================================================
 % Section 5.x: Results — Throughput Scaling (Test 2)
@@ -184,8 +179,8 @@ Transient throughput spikes in some data points are measurement artifacts from t
 \section{Results: Throughput Scaling (Single Port)}
 \label{sec:results-throughput-scaling}
 
-Test~2 (Section~\ref{sec:test-throughput-scaling}) ramps throughput on a single port in four steps (250/500/750/1000\,Mbps for GbE devices; 25/50/75/100\,Mbps for the Alcatel).
-Only one Ethernet cable was connected, allowing comparison with Test~1's four-cable idle to quantify per-port overhead (RQ2).
+Test~2 uses a single Ethernet cable and ramps throughput in four steps (250/500/750/1000\,Mbps for \ac{GbE} devices; 25/50/75/100\,Mbps for the Alcatel).
+Having only one cable connected makes it easy to compare with Test~1's four-cable idle and figure out the actual per-port overhead (RQ2).
 
 % ---------------------------------------------------------------------------
 \subsection{Power Time-Series}
@@ -227,7 +222,7 @@ Only one Ethernet cable was connected, allowing comparison with Test~1's four-ca
                 \addplot[red!70!black, very thin] table[col sep=comma, x=ElapsedSeconds, y=PowerMW] {data/test2_fritzbox_data.csv};
             \end{axis}
         \end{tikzpicture}
-        \caption{Fritzbox: power \emph{decreases} at high load (settling)}
+        \caption{Fritzbox: power \emph{decreases} at high load}
     \end{subfigure}
 
     \vspace{0.3cm}
@@ -258,8 +253,7 @@ Only one Ethernet cable was connected, allowing comparison with Test~1's four-ca
                 xmin=0, xmax=1050, ymin=0, ymax=9000,
                 grid=major, grid style={gray!30},
                 title={\small Power vs.\ Throughput (all)},
-                legend pos=north west,
-                legend style={font=\scriptsize, fill=white, fill opacity=0.9},
+                legend style={font=\scriptsize, at={(0.98,0.02)}, anchor=south east, legend columns=2},
                 label style={font=\small}, tick label style={font=\scriptsize}, title style={font=\small},
             ]
                 \addplot[blue, thick, mark=square*, mark size=1.5pt] coordinates {(0,7957)(249,8111)(467,8191)(705,8255)(927,8344)};
@@ -272,10 +266,10 @@ Only one Ethernet cable was connected, allowing comparison with Test~1's four-ca
                 \addlegendentry{Alcatel}
             \end{axis}
         \end{tikzpicture}
-        \caption{Power vs.\ throughput (sub-linear scaling)}
+        \caption{Power vs.\ Throughput for all devices.}
         \label{fig:test2_power_vs_throughput}
     \end{subfigure}
-    \caption{Test~2 single-port ramp results. Phases: Idle $\to$ 250 $\to$ 500 $\to$ 750 $\to$ 1000\,Mbps $\to$ Post. The Fritzbox shows a settling artifact where pre-test idle was elevated from a prior test; its post-test value (3\,584\,mW) is the true baseline.}
+    \caption{Test~2 single-port ramp results.}
     \label{fig:test2_power_all}
 \end{figure}
 
@@ -286,9 +280,9 @@ Only one Ethernet cable was connected, allowing comparison with Test~1's four-ca
 
 \begin{table}[H]
     \centering
-    \caption{Test~2: Per-step power and throughput for GbE devices (single port).}
+    \caption{Test~2: Per-step power and throughput for \ac{GbE} devices (single port).}
     \label{tab:test2_gbe_stats}
-    \small
+    \footnotesize\renewcommand{\arraystretch}{0.88}\setlength{\tabcolsep}{4pt}
     \begin{tabular}{l l r r r r r}
         \toprule
         & & \multicolumn{2}{c}{\textbf{Power (mW)}} & \multicolumn{2}{c}{\textbf{Throughput}} & \\
@@ -322,23 +316,23 @@ Only one Ethernet cable was connected, allowing comparison with Test~1's four-ca
     \end{tabular}
 \end{table}
 
-The Huawei and Asus scale sub-linearly---each 250\,Mbps step costs progressively less power.
-The Asus shows a saturation effect: the 750$\to$1000\,Mbps step adds only +4\,mW, suggesting the switch fabric is already at its maximum-throughput power state.
-The Fritzbox's downward trend is a settling artifact (post-test idle is 488\,mW below pre-test; true idle is likely $\sim$3\,584\,mW).
-The Alcatel (100\,Mbps) scales linearly: each 25\,Mbps step adds $\sim$30--46\,mW, totalling +120\,mW (+7.1\%) at full load.
+The Huawei and Asus both scale sub-linearly -- each 250\,Mbps step costs less power than the previous one.
+The Asus hits an interesting plateau: the 750$\to$1000\,Mbps step adds only +4\,mW.
+The Fritzbox looks strange here because the pre-test idle was elevated from the previous test run.The post-test value (3\,584\,mW) is closer to the real baseline. Also its power actually \emph{decreases} at high load due to \ac{CPU} saturation, as mentioned before.
+The Alcatel (100\,Mbps) is the odd one out, scaling linearly: each 25\,Mbps step adds $\sim$30--46\,mW, for a total of +120\,mW (+7.1\%) at full load.
 
 % ---------------------------------------------------------------------------
 \subsection{Per-Port Idle Overhead (RQ2)}
 \label{sec:test2-port-overhead}
 % ---------------------------------------------------------------------------
 
-Comparing single-cable idle (this test) with four-cable idle (Test~1) isolates the per-port overhead:
+Comparing single-cable idle from this test with four-cable idle from Test~1 gives us the per-port overhead directly:
 
 \begin{table}[H]
     \centering
-    \caption{Per-port idle overhead: Test~1 (4~cables) vs.\ Test~2 (1~cable). Per-port = $\Delta / 3$ for GbE; direct difference for Alcatel.}
+    \caption{Per-port idle overhead: Test~1 (4~cables) vs.\ Test~2 (1~cable). Per-port = $\Delta / 3$ for \ac{GbE}; direct difference for Alcatel.}
     \label{tab:test2_port_overhead}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r}
         \toprule
         \textbf{Device} & \textbf{4-cable (mW)} & \textbf{1-cable (mW)} & \textbf{$\Delta$ (mW)} & \textbf{Per-Port (mW)} \\
@@ -351,17 +345,8 @@ Comparing single-cable idle (this test) with four-cable idle (Test~1) isolates t
     \end{tabular}
 \end{table}
 
-The Fritzbox has the lowest GbE overhead ($\sim$120\,mW/port); the Asus the highest ($\sim$395\,mW).
-For Asus and Huawei, three idle cables (1.0--1.2\,W) cost more than driving a single port at full 1\,Gbps ($\sim$0.4\,W), showing that idle connections carry a non-trivial power cost.
-
-% ---------------------------------------------------------------------------
-\subsection{Summary: RQ2 and RQ3}
-\label{sec:test2-rq-answers}
-% ---------------------------------------------------------------------------
-
-\paragraph{RQ2:} Each idle GbE connection adds 120--395\,mW. Disconnecting unused cables offers a measurable, though modest, saving---especially for the Asus and Huawei where idle cable overhead exceeds per-port load cost.
-
-\paragraph{RQ3:} Power scales sub-linearly with throughput. The total idle-to-full-load increase is only 4.9--7.1\% of idle power, meaning the base platform dominates. Reducing idle power (device selection, eco modes) matters far more than limiting throughput.
+The Fritzbox has the most power-efficient \ac{GbE} ports at $\sim$120\,mW each; the Asus costs the most at $\sim$395\,mW/port.
+More strikingly: for the Asus and Huawei, three idle cables together (1.0--1.2\,W) cost \emph{more} than running a single port at full 1\,Gbps load ($\sim$0.4\,W). The cable just being plugged in is more expensive than the data flowing through it.
 
 % ===========================================================================
 % Section 5.x: Results — Incremental Subsystem Power Profiling (Test 3)
@@ -369,8 +354,8 @@ For Asus and Huawei, three idle cables (1.0--1.2\,W) cost more than driving a si
 \section{Results: Incremental Subsystem Power Profiling}
 \label{sec:results-subsystem}
 
-Test~3 (Section~\ref{sec:test-subsystem-profiling}) progressively enables each router subsystem---from bare power-on to maximum combined load---to isolate the marginal power cost of each component.
-Run~A used default settings; Run~B enabled manufacturer power-saving modes (except Alcatel, which has none).
+Test~3 is the most comprehensive one: it starts with each device powered on and nothing else connected, then adds subsystems one by one (Ethernet cables, \ac{USB}, Wi-Fi radios, clients, load) to see exactly what each component costs.
+Run~A used factory defaults; Run~B repeated the Wi-Fi groups with manufacturer power-saving modes enabled. Except for the Alcatel, which has no such options.
 
 % ---------------------------------------------------------------------------
 \subsection{Per-Device Subsystem Power Profiles}
@@ -383,7 +368,7 @@ Table~\ref{tab:test3_runA} shows the cumulative power at each subsystem stage fo
     \centering
     \caption{Test~3 Run~A (default settings): Mean power at each cumulative subsystem stage. ``$\Delta$'' columns show the incremental power added by that subsystem. All values in mW.}
     \label{tab:test3_runA}
-    \small
+    \footnotesize\renewcommand{\arraystretch}{0.88}\setlength{\tabcolsep}{3pt}
     \begin{tabular}{l r r r r r r r r}
         \toprule
         \textbf{Subsystem Stage} & \multicolumn{2}{c}{\textbf{Asus}} & \multicolumn{2}{c}{\textbf{Huawei}} & \multicolumn{2}{c}{\textbf{Fritzbox}} & \multicolumn{2}{c}{\textbf{Alcatel}} \\
@@ -395,7 +380,7 @@ Table~\ref{tab:test3_runA} shows the cumulative power at each subsystem stage fo
         +2nd Cable          & 4\,430 & +290  & 6\,874 & +245  & 2\,471 & +261  & 1\,484 & +123 \\
         +3rd Cable          & 4\,739 & +309  & 7\,173 & +299  & 2\,790 & +319  & ---    & --- \\
         +4th Cable          & 4\,785 & +46   & 7\,430 & +257  & 3\,041 & +251  & ---    & --- \\
-        +USB                & 5\,227 & +442  & 7\,793 & +363  & 3\,460 & +419  & ---    & --- \\
+        +\ac{USB}                & 5\,227 & +442  & 7\,793 & +363  & 3\,460 & +419  & ---    & --- \\
         +WiFi 2.4\,GHz      & 6\,525 & +1\,298 & 8\,580 & +787 & \multirow{2}{*}{5\,205} & \multirow{2}{*}{+1\,745} & 1\,903 & +419 \\
         +WiFi 5\,GHz        & 7\,883 & +1\,358 & 9\,240 & +660 &       &       & ---    & --- \\
         +WiFi Clients       & 7\,986 & +103  & 9\,329 & +89   & 5\,338 & +133  & 2\,300 & +397 \\
@@ -406,29 +391,23 @@ Table~\ref{tab:test3_runA} shows the cumulative power at each subsystem stage fo
 \end{table}
 
 \paragraph{Key observations.}
-The \textbf{Asus} shows the clearest subsystem separation: WiFi radios alone cost 2\,656\,mW (more than all four Ethernet ports combined), and active WiFi load adds another 3\,346\,mW.
-The \textbf{Huawei} has the highest bare minimum (6\,342\,mW) due to its integrated GPON ONT; under full load it reaches 47.1\% of its rated 24\,W.
-The \textbf{Fritzbox} cannot enable WiFi bands individually---both activate at once (+1\,745\,mW); under full load it reaches 37.7\% of rated 18\,W.
-The \textbf{Alcatel}, with only 2$\times$100\,Mbps ports and 2.4\,GHz WiFi, stays below 2.3\,W even at full load.
-Its WiFi load actually \emph{decreased} power slightly ($-$95\,mW), suggesting the SoC does not scale power with throughput.
-
-\paragraph{Fritzbox port anomaly.}
-One LAN port reported $\sim$25\,000\,Mbps during Group~6 (likely counting dropped frames as sent).
-The same port was normal in Test~1 four weeks earlier, suggesting intermittent hardware degradation.
-Group~6 throughput is interpolated from the three working ports ($\sim$461\,Mbps $\times$ 4 = $\sim$1\,845\,Mbps corrected).
-Power measurements are unaffected.
+The Asus shows: the Wi-Fi radios alone cost 2\,656\,mW more than all four Ethernet ports put together. Active Wi-Fi load on top adds another 3\,346\,mW. That is a lot of power just for wireless. Wich makes sense given the broader channel bandwidth.
+The Huawei starts high (6\,342\,mW bare minimum), likely because the GPON fiber transceiver is always running, there is no way to turn it off. Under full load it reaches 47.1\% of it's rated 24\,W which is the closest any device gets to its rated maximum power draw.
+The Fritzbox can't enable Wi-Fi bands one at a time. Therefore, both radios turn on together (+1\,745\,mW in one step). Under full load it hits 37.7\% of rated 18\,W.
+The Alcatel is remarkable for how little it draws: below 2.3\,W even at full load. Its Wi-Fi load phase actually \emph{reduced} power by 95\,mW. It appears to not scale power consumption with throughput at all.
 
 % ---------------------------------------------------------------------------
 \subsection{Per-Port PHY Link-Up Cost (RQ2)}
 \label{sec:test3-rq2}
 % ---------------------------------------------------------------------------
 
-Table~\ref{tab:test3_per_port} isolates the per-port PHY link-up cost (idle cable, no traffic).
+Table~\ref{tab:test3_per_port} isolates the per-port \ac{PHY} link-up cost (idle cable, no traffic).
 
 \begin{table}[H]
     \centering
     \caption{Per-port PHY link-up cost (mW) from Test~3 Group~1.}
     \label{tab:test3_per_port}
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r r}
         \toprule
         \textbf{Device} & \textbf{+Cable~1} & \textbf{+Cable~2} & \textbf{+Cable~3} & \textbf{+Cable~4} & \textbf{Avg/port} \\
@@ -441,13 +420,10 @@ Table~\ref{tab:test3_per_port} isolates the per-port PHY link-up cost (idle cabl
     \end{tabular}
 \end{table}
 
-GbE per-port idle cost is consistent across devices: 265--302\,mW.
-The Asus cable~1 is an outlier (+564\,mW), likely due to PHY initialization overhead; cable~4 adds only +46\,mW, suggesting shared resources.
-Fast Ethernet (Alcatel) costs less at $\sim$172\,mW/port.
-These values complement Test~2's bulk comparison (120--395\,mW/port from single-vs-four-cable idle difference), with Test~3 providing the more granular per-cable breakdown.
+\ac{GbE} port idle costs are consistent: 265--302\,mW/cable. The Asus first cable costs +564\,mW as the \ac{PHY} probably does a heavier init going from zero to one active port. By cable~4 it adds only +46\,mW, suggesting the first port carries most of the overhead. The Alcatel's 100\,Mbps ports are more efficient at +172\,mW each.
 
 % ---------------------------------------------------------------------------
-\subsection{WiFi and USB Subsystem Costs (RQ4, RQ5)}
+\subsection{WiFi and \ac{USB} Subsystem Costs (RQ4, RQ5)}
 \label{sec:test3-rq4-rq5}
 % ---------------------------------------------------------------------------
 
@@ -457,16 +433,16 @@ Table~\ref{tab:test3_subsystem_costs} breaks down the marginal power cost per su
     \centering
     \caption{Marginal subsystem power cost (mW). WiFi Load throughput from manual iperf3 observations.}
     \label{tab:test3_subsystem_costs}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r r}
         \toprule
         \textbf{Subsystem} & \textbf{Asus} & \textbf{Huawei} & \textbf{Fritzbox} & \textbf{Alcatel} \\
         \midrule
         All Ethernet (idle)     & +1\,209  & +1\,088  & +1\,058  & +344 \\
-        USB                     & +442     & +363     & +419     & --- \\
+        \ac{USB}                     & +442     & +363     & +419     & --- \\
         WiFi Radios (idle)      & +2\,656  & +1\,447  & +1\,745  & +419 \\
-        \quad 2.4\,GHz only     & +1\,298  & +787     & \multicolumn{1}{c}{(both)} & +419 \\
-        \quad 5\,GHz only       & +1\,358  & +660     & \multicolumn{1}{c}{(both)} & --- \\
+        \quad 2.4\,GHz only     & +1\,298  & +787     & \multicolumn{1}{r}{(both)} & +419 \\
+        \quad 5\,GHz only       & +1\,358  & +660     & \multicolumn{1}{r}{(both)} & --- \\
         WiFi Clients (idle)     & +103     & +89      & +133     & +397 \\
         WiFi Load ($\Delta$)    & +3\,346  & +1\,244  & +951     & $-$95 \\
         \quad at $\sim$Mbps     & 147      & 58       & 194      & 17.5 \\
@@ -476,23 +452,22 @@ Table~\ref{tab:test3_subsystem_costs} breaks down the marginal power cost per su
     \end{tabular}
 \end{table}
 
-\noindent WiFi radios are the single largest idle power consumer: on the Asus, idle radios (2\,656\,mW) cost more than all four Ethernet ports combined (1\,209\,mW).
-Disabling unused radios offers the largest single saving for idle devices (\textbf{RQ5}).
-USB adds 363--442\,mW, and idle client association is cheap (89--133\,mW for GbE devices).
+\noindent The Wi-Fi radio numbers are interesting: on the Asus, idle radios cost 2\,656\,mW which is more than all four Ethernet cables combined (1\,209\,mW). If you want to reduce a device's power consumption without changing hardware, turning off unused radio bands appears to be the most impactful.
+\ac{USB} adds 363--442\,mW which is more than I expected. Idle client association barely registers at 89--133\,mW with the radio being on costing far more than phones being connected to it.
 
 % ---------------------------------------------------------------------------
-\subsection{Power-Saving Modes (RQ6)}
+\subsubsection*{Power-Saving Modes (RQ6)}
 \label{sec:test3-rq6}
 % ---------------------------------------------------------------------------
 
-Run~B repeated Groups~3--6 with power-saving modes enabled.
-Table~\ref{tab:test3_eco} compares Run~A and Run~B.
+Run~B repeated Groups~3--6 with manufacturer provided power-saving options turned on.
+Table~\ref{tab:test3_eco} shows the difference.
 
 \begin{table}[H]
     \centering
     \caption{Run~A vs.\ Run~B (eco/power-saving mode). $\Delta$Eco: negative = saving. Fritzbox eco affects all subsystems; Asus/Huawei only WiFi TX power.}
     \label{tab:test3_eco}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l l r r r}
         \toprule
         \textbf{Device} & \textbf{Stage} & \textbf{Run~A (mW)} & \textbf{Run~B (mW)} & \textbf{$\Delta$Eco (mW)} \\
@@ -512,7 +487,7 @@ Table~\ref{tab:test3_eco} compares Run~A and Run~B.
         \multirow{6}{*}{Fritzbox}
             & Bare Min          & 1\,983  & 1\,930  & $-$53 \\
             & 4 Cables (idle)   & 3\,041  & 2\,475  & $-$566 \\
-            & +USB              & 3\,460  & 2\,920  & $-$540 \\
+            & +\ac{USB}              & 3\,460  & 2\,920  & $-$540 \\
             & WiFi Radios ON    & 5\,205  & 4\,535  & $-$670 \\
             & WiFi Load         & 6\,289  & 5\,704  & $-$585 \\
             & All MAX           & 6\,794  & 6\,320  & $-$474 \\
@@ -520,22 +495,22 @@ Table~\ref{tab:test3_eco} compares Run~A and Run~B.
     \end{tabular}
 \end{table}
 
-The \textbf{Fritzbox} eco mode is the clear winner (\textbf{RQ6}): it saves 474--670\,mW (7--19\%) across all subsystems by downshifting the Ethernet PHY to 100\,Mbps ($\sim$95\,Mbps measured per port instead of $\sim$460\,Mbps).
-The \textbf{Asus} TX power reduction saves only 35--356\,mW ($<$3\%)---essentially negligible.
-The \textbf{Huawei} showed anomalous behaviour: idle WiFi power dropped slightly, but under load Run~B drew +2\,146\,mW \emph{more} than Run~A, possibly because the WiFi-to-WiFi topology caused different modulation/retry behaviour at lower TX power.
-This result should be treated with caution.
+The \textbf{Fritzbox} eco mode is clearly the most useful of the three (\textbf{RQ6}): it saves 474--670\,mW (7--19\%) across all stages. The catch is it throttles the Ethernet PHY down to $\sim$95\,Mbps per port instead of the normal $\sim$460\,Mbps -- so it is a real trade-off between energy and performance.
+The \textbf{Asus} TX power reduction is basically pointless: 35--356\,mW saved ($<$3\%). Not worth the bother.
+The \textbf{Huawei} result is confusing: idle Wi-Fi power dropped slightly as expected, but under load Run~B drew +2\,146\,mW \emph{more} than Run~A. My best guess is that reducing TX power forced the radio into more retransmissions and lower modulation orders, which cost more power overall. Either way, treat the Huawei eco result with skepticism, but it did repeat that test and got similar results.
 
 % ---------------------------------------------------------------------------
-\subsection{Approaching Rated Maximum Power (RQ7)}
+\subsubsection*{Approaching Rated Maximum Power (RQ7)}
 \label{sec:test3-rq7}
 % ---------------------------------------------------------------------------
 
-Table~\ref{tab:test3_rated} compares Group~6 (all subsystems at maximum load) with manufacturer ratings.
+Table~\ref{tab:test3_rated} shows Group~6 peak power vs.\ the spec sheet numbers.
 
 \begin{table}[H]
     \centering
     \caption{Test~3 maximum measured power vs.\ manufacturer rated maximum (\textbf{RQ7}).}
     \label{tab:test3_rated}
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r}
         \toprule
         \textbf{Device} & \textbf{Measured Max (mW)} & \textbf{Rated Max (mW)} & \textbf{Utilisation} \\
@@ -548,8 +523,8 @@ Table~\ref{tab:test3_rated} compares Group~6 (all subsystems at maximum load) wi
     \end{tabular}
 \end{table}
 
-No device exceeds 50\% of its rated maximum, even with everything running.
-Adding WiFi and USB load (vs.\ Ethernet-only in Test~1) moved devices from 21--40\% to 22--47\% utilisation---still well below the rated ceiling, confirming that manufacturers include substantial headroom.
+Not one device gets above 50\% of its spec sheet maximum, even with every subsystem active and under full load. As far as my tests go at least.
+Compared to Test~1 (Ethernet only), adding Wi-Fi and \ac{USB} bumped utilisation from 21--40\% to 22--47\%, but still nowhere near the rated limit. Manufacturer specs clearly include a lot of headroom for safety and reliability reasons, but it is interesting to see how much of that headroom is actually unused in real-world scenarios.
 
 % ---------------------------------------------------------------------------
 \subsection{Summary of Findings}
@@ -557,11 +532,11 @@ Adding WiFi and USB load (vs.\ Ethernet-only in Test~1) moved devices from 21--4
 % ---------------------------------------------------------------------------
 
 \begin{itemize}
-    \item \textbf{RQ2:} Idle GbE cable costs 265--302\,mW/port; Fast Ethernet $\sim$172\,mW.
-    \item \textbf{RQ4:} Bare minimum ranges from 1.14\,W (Alcatel) to 6.34\,W (Huawei); all-idle from 2.30 to 7.99\,W (\euro{5}--\euro{18}/year).
-    \item \textbf{RQ5:} WiFi radios dominate idle cost (419--2\,656\,mW). Disabling unused radios is the single most impactful saving.
-    \item \textbf{RQ6:} Fritzbox eco saves 474--670\,mW (7--19\%) but limits Ethernet to $\sim$95\,Mbps/port. Asus/Huawei TX reduction: minimal or inconsistent.
-    \item \textbf{RQ7:} Devices reach only 22--47\% of rated maximum under full load.
+    \item \textbf{RQ2:} Each idle \ac{GbE} cable costs 265--302\,mW; Except for Alcatel: $\sim$172\,mW.
+    \item \textbf{RQ4:} Bare-minimum power ranges from 1.14\,W (Alcatel) to 6.34\,W (Huawei). With everything connected but idle: 2.30--7.99\,W, or \euro{5}--\euro{18}/year in electricity.
+    \item \textbf{RQ5:} Wi-Fi radios are the biggest idle power draw (419--2\,656\,mW). Turning off unused bands is the single most impactful thing you can do.
+    \item \textbf{RQ6:} Fritzbox eco mode genuinely works -- saves 474--670\,mW (7--19\%) at the cost of capping Ethernet to $\sim$100\,Mbps/port. Asus and Huawei TX power reduction: slight reduction to actually making it worse.
+    \item \textbf{RQ7:} Even with everything on and at full load, no device exceeds 47\% of its rated maximum.
 \end{itemize}
 
 % ===========================================================================
@@ -570,16 +545,16 @@ Adding WiFi and USB load (vs.\ Ethernet-only in Test~1) moved devices from 21--4
 \section{Results: Wi-Fi Power and Throughput}
 \label{sec:results-wifi}
 
-Test~4 (Section~\ref{sec:test-wifi-distance}) measures Wi-Fi power and throughput across four routers, two bands (2.4/5\,GHz), and two distances (near: $<$2\,m; wall: $\sim$10\,m, 1 wall), addressing \textbf{RQ5}.
-Each scenario: 1\,min idle, 3\,min iperf3 TCP flood, 1\,min post.
-Device-specific notes: the Fritzbox always has both radios active; the Huawei required WiFi-to-WiFi routing (LAN-WiFi isolation); the Alcatel supports only 2.4\,GHz and includes additional ``both WiFi'' tests bypassing its 100\,Mbps LAN.
+Test~4 looks at Wi-Fi specifically: four routers, two bands (2.4/5\,GHz), two positions (near: $<$2\,m line of sight; wall: $\sim$10\,m through one interior wall).
+Each scenario is a 5-minute run: 1\,min idle baseline, 3\,min iperf3 \ac{TCP} load, 1\,min post.
+A few device quirks affected the results: The Fritzbox always runs both radios (firmware limitation). The Huawei isolates \ac{LAN} and Wi-Fi clients so tests had to run phone-to-phone. The Alcatel is 2.4\,GHz only, plus some extra runs were done with the test PC also on Wi-Fi to check whether its 100\,Mbps \ac{LAN} was bottlenecking things (it wasn't).
 
 % ---------------------------------------------------------------------------
 \subsection{Power Consumption Overview}
 \label{sec:results-wifi-power}
 % ---------------------------------------------------------------------------
 
-Table~\ref{tab:test4_summary} summarises the idle power, load power, Wi-Fi power overhead ($\Delta P$), average throughput, and energy efficiency for all tested scenarios.
+Table~\ref{tab:test4_summary} has all the numbers: idle power, load power, the Wi-Fi overhead ($\Delta P$ = load $-$ idle), throughput, and efficiency for every scenario.
 
 \begin{table}[H]
     \centering
@@ -587,8 +562,7 @@ Table~\ref{tab:test4_summary} summarises the idle power, load power, Wi-Fi power
     $\Delta P$ denotes the increase from idle to load.
     Efficiency is computed as throughput / load power.}
     \label{tab:test4_summary}
-    \small
-    \setlength{\tabcolsep}{4pt}
+    \footnotesize\renewcommand{\arraystretch}{0.88}\setlength{\tabcolsep}{4pt}
     \begin{tabular}{l l l r r r r r}
         \toprule
         \textbf{Device} & \textbf{Band} & \textbf{Dist.} &
@@ -615,7 +589,7 @@ Table~\ref{tab:test4_summary} summarises the idle power, load power, Wi-Fi power
         Alcatel   & 2.4\,GHz & Near & 1\,780 & 2\,579 & +799    & 94   & 36.3 \\
         Alcatel   & 2.4\,GHz & Wall & 1\,763 & 2\,933 & +1\,171 & 88   & 30.1 \\
         \midrule
-        \multicolumn{7}{l}{\textit{Alcatel extra: test PC also on Wi-Fi (bypassing 100\,Mbps LAN)}} \\
+        \multicolumn{7}{l}{\textit{Alcatel extra: test PC also on Wi-Fi (bypassing 100\,Mbps \ac{LAN})}} \\
         Alcatel   & 2.4\,GHz & Near$^*$ & 1\,588 & 2\,211 & +623  & 86   & 39.0 \\
         Alcatel   & 2.4\,GHz & Wall$^*$ & 1\,624 & 2\,390 & +766  & 64   & 26.6 \\
         \bottomrule
@@ -627,7 +601,7 @@ Table~\ref{tab:test4_summary} summarises the idle power, load power, Wi-Fi power
 \label{sec:results-wifi-overhead}
 % ---------------------------------------------------------------------------
 
-Figure~\ref{fig:test4_bars} compares the Wi-Fi power overhead ($\Delta P$ = load $-$ idle), average throughput, and energy efficiency across all standard scenarios.
+Figure~\ref{fig:test4_bars} compares the Wi-Fi power overhead ($\Delta P$ = load $-$ idle), average throughput, and energy efficiency across all scenarios.
 N = near ($<$2\,m), W = wall ($\sim$10\,m, 1 wall); FB = Fritzbox, HW = Huawei, Alc = Alcatel.
 
 \begin{figure}[H]
@@ -638,7 +612,7 @@ N = near ($<$2\,m), W = wall ($\sim$10\,m, 1 wall); FB = Fritzbox, HW = Huawei, 
                 width=\linewidth, height=6cm,
                 ybar, bar width=6pt,
                 ylabel={$\Delta P$ (mW)},
-                ymin=0, ymax=4200,
+                ymin=0, ymax=5000,
                 symbolic x coords={{Asus 5N},{Asus 5W},{Asus 2.4N},{Asus 2.4W},{FB 5N},{FB 5W},{FB 2.4N},{FB 2.4W},{HW 5N},{HW 5W},{HW 2.4N},{HW 2.4W},{Alc 2.4N},{Alc 2.4W}},
                 xtick=data, x tick label style={rotate=60, anchor=east, font=\tiny},
                 grid=major, grid style={gray!30},
@@ -700,35 +674,25 @@ N = near ($<$2\,m), W = wall ($\sim$10\,m, 1 wall); FB = Fritzbox, HW = Huawei, 
         \caption{Energy efficiency (Mbps/W of total load power)}
         \label{fig:test4_efficiency}
     \end{subfigure}
-    \caption{Test~4 Wi-Fi comparison across devices, bands, and distances. The Asus draws up to 3.8\,W extra under WiFi load but achieves the highest throughput (584\,Mbps at 5\,GHz near) and best efficiency (66\,Mbps/W). The Huawei is least efficient (2.6--10.2\,Mbps/W) due to its WiFi-to-WiFi test topology.}
+    \caption{Test~4 Wi-Fi comparison across devices, bands, and distances.}
     \label{fig:test4_bars}
 \end{figure}
 
-% ---------------------------------------------------------------------------
-\subsection{Distance and Band Analysis}
-\label{sec:results-wifi-distance-band}
-% ---------------------------------------------------------------------------
-
 \paragraph{Distance effect on power.}
-Moving the client behind a wall does \emph{not} consistently increase router power.
-The Asus at 5\,GHz is an exception: overhead \emph{increases} from 2\,992 to 3\,751\,mW at the wall (+25\%), suggesting active TX power boosting despite 58\% throughput loss (584$\to$244\,Mbps).
-At 2.4\,GHz the opposite happens: overhead drops 68\% (3\,101$\to$996\,mW) because the radio is mostly idle at 33\,Mbps.
-The Fritzbox and Huawei show modest, band-dependent changes.
-The Alcatel draws 47\% more at the wall position with barely any throughput reduction (94$\to$88\,Mbps), likely due to retransmission overhead.
+There is no consistent rule here: moving the client behind a wall does not always increase router power.
+The Asus at 5\,GHz is the clearest exception: power overhead \emph{increases} from 2\,992 to 3\,751\,mW (+25\%) at the wall, even though throughput drops 58\% (584$\to$244\,Mbps). The router is apparently boosting TX power to compensate for the worse signal.
+At 2.4\,GHz the Asus does the opposite: overhead drops 68\% (3\,101$\to$996\,mW) because the link slows to 33\,Mbps and the radio is mostly idle.
+The Alcatel draws 47\% more at the wall with barely any throughput loss (94$\to$88\,Mbps).
 
 \paragraph{Band effect.}
-5\,GHz achieves 2--4$\times$ higher throughput at near distance (Asus: 584 vs.\ 143\,Mbps; Fritzbox: 235 vs.\ 89\,Mbps) thanks to wider channel bandwidths.
-However, 5\,GHz degrades more through walls---the Fritzbox drops 74\% on 5\,GHz vs.\ 43\% on 2.4\,GHz, confirming that lower frequencies penetrate walls better.
+At close range, 5\,GHz is clearly faster: 2--4$\times$ higher throughput (Asus: 584 vs.\ 143\,Mbps; Fritzbox: 235 vs.\ 89\,Mbps), mainly thanks to wider channels.
+Through walls, 5\,GHz degrades badly, as expected. The Fritzbox drops 74\% on 5\,GHz vs.\ 43\% on 2.4\,GHz.
 
 \paragraph{Huawei variability.}
-The Huawei showed extremely erratic throughput (0--253\,Mbps swings, 743--836 TCP retransmits) because its WiFi-to-WiFi topology means both TX and RX traverse the wireless medium, doubling congestion impact.
-
-\paragraph{Alcatel ``both WiFi'' tests.}
-To check whether the 100\,Mbps LAN bottlenecked WiFi throughput, additional runs placed the test PC on WiFi too.
-Throughput actually \emph{decreased} (86\,Mbps near, 64\,Mbps wall), confirming the LAN was not the bottleneck---the 802.11n radio caps at $\sim$94\,Mbps.
+The Huawei results are all over the place: 0--253\,Mbps swings within a single test run, 743--836 \ac{TCP} retransmits. The phone-to-phone test topology is the culprit as both TX and RX use the wireless medium, effectively halving the available capacity and making the link more sensitive to interference.
 
 % ---------------------------------------------------------------------------
-\subsection{Time-Series Examples}
+\subsubsection*{Time-Series Examples}
 \label{sec:results-wifi-timeseries}
 % ---------------------------------------------------------------------------
 
@@ -781,19 +745,19 @@ Throughput actually \emph{decreased} (86\,Mbps near, 64\,Mbps wall), confirming 
 % ---------------------------------------------------------------------------
 
 \paragraph{RQ5 summary.}
-WiFi draws 7--8$\times$ more power per unit throughput than wired Ethernet (Asus: 3.0--3.8\,W for 244--584\,Mbps WiFi vs.\ 444\,mW for 1\,Gbps wired).
-Distance effects are device- and band-dependent---not a simple ``more distance = more power'' relationship.
-5\,GHz is more energy-efficient when signal is strong (Asus: 66 vs.\ 17\,Mbps/W) but degrades faster through walls.
-Channel width matters more than band choice: the Asus at 160\,MHz achieves 584\,Mbps vs.\ the Fritzbox at 80\,MHz (235\,Mbps) and the Huawei (83\,Mbps).
-Absolute power varies enormously---at 2.4\,GHz near, the Alcatel draws 2.6\,W total vs.\ the Huawei at 8.7\,W.
+Wi-Fi costs 7--8$\times$ more power per megabit than wired Ethernet. The Asus draws 3.0--3.8\,W for 244--584\,Mbps on Wi-Fi, versus 444\,mW for 1\,Gbps wired.
+Distance effects are completely device- and band-dependent.
+5\,GHz is more efficient when you are close (Asus: 66 vs.\ 17\,Mbps/W at near position) but degrades much faster through walls.
+The biggest single factor for throughput, and therefore efficiency, is channel width: the Asus runs 160\,MHz on 5\,GHz and hits 584\,Mbps; the Fritzbox at 80\,MHz reaches 235\,Mbps; the Huawei manages only 83\,Mbps, which is surprisingly low. Generation (ax vs.\ ac vs.\ n) matters less than how wide the channel is.
+And the absolute power spread is huge: at 2.4\,GHz close range, the Alcatel draws 2.6\,W total while the Huawei draws 8.7\,W.
 
 % ===========================================================================
 % Section 5.x: Results — ISP Bridge Mode Comparison (Test 5)
 % ===========================================================================
-\section{Results: ISP Bridge Mode Comparison}
+\section{Results: \ac{ISP} Bridge Mode Comparison}
 \label{sec:results-bridge-mode}
 
-Test~5 (Section~\ref{sec:test-bridge-mode}) compares the Huawei standalone (Configuration~A, reused from Test~1) against a two-device setup with the Huawei in bridge mode and the Asus as primary router (Configuration~B), both measured through a single DECT~200.
+Test~5 answers a practical question: is it worth running an \ac{ISP} modem in bridge mode alongside a dedicated router, from a power perspective? Configuration~A is the Huawei operating standalone (reused results from Test~1). Configuration~B is the Huawei in bridge mode with the Asus as the primary router. Both devices are plugged into one \ac{DECT}~200 via a power strip, so the measurement captures combined system power.
 
 % ---------------------------------------------------------------------------
 \subsection{Configuration~B: Bridge Mode Results}
@@ -812,22 +776,24 @@ Test~5 (Section~\ref{sec:test-bridge-mode}) compares the Huawei standalone (Conf
             title={Config.~B: Combined Power (Huawei Bridge + Asus)},
             extra x ticks={600,1795,2995,4195,5400}, extra x tick labels={},
             extra x tick style={grid=major, grid style={dashed, red!50, line width=0.6pt}},
+            scaled y ticks=false,
         ]
             \addplot[blue, very thin] table[col sep=comma, x=ElapsedSeconds, y=PowerMW] {data/test5b_data.csv};
             \draw[dashed, gray, thin] (axis cs:0,16632) -- (axis cs:6600,16632);
         \end{axis}
     \end{tikzpicture}
-    \caption{Test~5 Config.~B combined power. Idle baseline: 16\,632\,mW (dashed). Phases: Idle $\to$ 1--4 Ports $\to$ Post.}
+    \caption{Test~5 Configuration~B combined power.}
     \label{fig:test5b_power}
 \end{figure}
 
-Combined idle: 16\,632\,mW; full 4-port load: 17\,072\,mW (+440\,mW, +2.6\%).
+Combined idle is 16\,632\,mW; full 4-port load reaches 17\,072\,mW (+440\,mW, +2.6\%). So the combined idle power is much higher then the Huawei alone (7\,510\,mW) and with the added load we see a much higher overall system power consumption than in Configuration~A (17\,072 vs.\ 7\,490\,mW). However, the incremental increase from load is only 440\,mW, which is less than the Huawei alone (1\,534\,mW).
+But overall a bridge mode setup is more power-hungry than a single device especially at idle and in low usage senarios.
 
 \begin{table}[H]
     \centering
     \caption{Test~5 Configuration~B: Per-phase power and throughput statistics (combined Huawei bridge + Asus). Throughput values are filtered (capped at 1000\,Mbps per interface; see Section~\ref{sec:test5b-throughput-anomaly}).}
     \label{tab:test5b_stats}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r r}
         \toprule
         \textbf{Phase} & \textbf{Avg Power} & $\boldsymbol{\sigma}$ & \textbf{Min / Max} & \textbf{Avg Tput} & \textbf{Eff.} \\
@@ -848,10 +814,9 @@ Combined idle: 16\,632\,mW; full 4-port load: 17\,072\,mW (+440\,mW, +2.6\%).
 \label{sec:test5b-throughput-anomaly}
 % ---------------------------------------------------------------------------
 
-The raw throughput exhibited a measurement artifact: port~1 reported the expected $\sim$955\,Mbps, but additional ports reported inflated values ($\sim$12\,000--33\,000\,Mbps each) because the load generator counted bytes written to the NIC socket rather than bytes actually forwarded through the 1\,Gbps WAN uplink.
-The constant $\sim$35\,Gbps aggregate reflects the Realtek~RTL8125 DMA ceiling, shared equally among active interfaces.
-All per-interface values are capped at 1\,000\,Mbps for analysis (Figure~\ref{fig:test5b_throughput}).
-\textbf{Power measurements are unaffected.}
+The throughput data had a weird artifact: port~1 reported the expected $\sim$955\,Mbps, but the additional ports reported 12\,000--33\,000\,Mbps each. What most likelly happened is that the load generator was counting bytes written to the \ac{NIC}'s send buffer, not bytes that actually made it through the 1\,Gbps WAN uplink. The \ac{NIC} was just filling its DMA buffer as fast as it could ($\sim$35\,Gbps aggregate = the Realtek RTL8125 ceiling shared across all active interfaces), completely ignoring the fact that the link couldn't actually carry that much.
+All per-interface values are capped at 1\,000\,Mbps for analysis, which wokred suprisingly well as can be seen in Figure~\ref{fig:test5b_throughput}.
+\textbf{Power measurements were completely unaffected -- the \ac{DECT}~200 doesn't care what the software thinks the throughput is.}
 
 \begin{figure}[H]
     \centering
@@ -894,7 +859,7 @@ All per-interface values are capped at 1\,000\,Mbps for analysis (Figure~\ref{fi
         \caption{Filtered: step-wise 955$\to$3\,951\,Mbps}
         \label{fig:test5b_filtered_throughput}
     \end{subfigure}
-    \caption{Test~5B throughput artifact. The load generator counted unsent bytes as throughput (left), inflating values to $\sim$35\,Gbps. After capping each interface at 1\,Gbps (right), the expected staircase pattern emerges.}
+    \caption{Test~5B throughput artifact.}
     \label{fig:test5b_throughput}
 \end{figure}
 
@@ -903,13 +868,13 @@ All per-interface values are capped at 1\,000\,Mbps for analysis (Figure~\ref{fi
 \label{sec:results-bridge-comparison}
 % ---------------------------------------------------------------------------
 
-Table~\ref{tab:bridge_comparison} compares standalone (Config.~A) vs.\ bridge + Asus (Config.~B).
+Table~\ref{tab:bridge_comparison} puts the two configurations side by side. Huawei standalone (Config.~A) vs.\ Huawei bridge + Asus (Config.~B). The delta shows the additional power consumed by the two-device setup.
 
 \begin{table}[H]
     \centering
-    \caption{Power comparison: Huawei standalone (Config.~A) vs.\ Huawei bridge + Asus (Config.~B). The delta shows the additional power consumed by the two-device setup.}
+    \caption{Power comparison Configuration~A vs Configuration~B.}
     \label{tab:bridge_comparison}
-    \small
+    \small\renewcommand{\arraystretch}{0.88}
     \begin{tabular}{l r r r r}
         \toprule
         \textbf{Phase} & \textbf{Config.~A} & \textbf{Config.~B} & \textbf{$\Delta$ (mW)} & \textbf{$\Delta$ (\%)} \\
@@ -935,17 +900,17 @@ Table~\ref{tab:bridge_comparison} compares standalone (Config.~A) vs.\ bridge + 
             bar width=10pt,
             xlabel={Load Phase},
             ylabel={Power (mW)},
-            ymin=0, ymax=20000,
+            ymin=0, ymax=22000,
             symbolic x coords={Idle, 1 Port, 2 Ports, 3 Ports, 4 Ports},
             xtick=data,
-            legend pos=north west,
-            legend style={font=\small},
+            legend style={font=\small, at={(0.5,-0.18)}, anchor=north, legend columns=2},
             grid=major,
             grid style={gray!30},
             title={Power Comparison: Standalone vs.\ Bridge Mode},
             nodes near coords,
             nodes near coords style={font=\tiny, rotate=90, anchor=west},
             every node near coord/.append style={/pgf/number format/fixed, /pgf/number format/precision=0},
+            scaled y ticks=false
         ]
             \addplot[fill=blue!40] coordinates {
                 (Idle, 8962)
@@ -966,15 +931,16 @@ Table~\ref{tab:bridge_comparison} compares standalone (Config.~A) vs.\ bridge + 
             \addlegendentry{Config.~B (Bridge + Asus)}
         \end{axis}
     \end{tikzpicture}
-    \caption{Standalone vs.\ bridge mode power. Config.~B adds $\sim$7.5--7.8\,W due to the Asus router.}
+    \caption{Standalone vs.\ bridge mode power. Config.~B adds $\sim$7.5--7.8\,W.}
     \label{fig:bridge_comparison_bar}
 \end{figure}
 
 \subsubsection{Analysis (RQ8)}
 
-The two-device setup draws +7\,670\,mW (+85.6\%) more at idle, almost entirely from the Asus's idle power (8\,226\,mW).
-Subtracting the Asus's Test~1 values, the Huawei in bridge mode draws $\sim$8\,406\,mW idle ($-$556\,mW vs.\ router mode) and $\sim$8\,139\,mW at full load ($-$1\,371\,mW)---bridge mode does save 6--14\% on the ISP device by disabling NAT/DHCP/firewall.
-However, the Asus's 8.2\,W idle draw dwarfs this saving.
+The two-device setup draws +7\,670\,mW (+85.6\%) more at idle than the Huawei alone.
+Almost all of that is just the Asus existing: it draws 8\,226\,mW at idle regardless of what the Huawei is doing.
+The Huawei in bridge mode does save something compared to the data from Test~1. It draws $\sim$556\,mW less at idle and $\sim$1\,371\,mW less at full load (6--14\% reduction).
+But the Asus's 8.2\,W idle is much higher than the savings.
 
-\textbf{RQ8 answer: No.} Bridge mode is not energetically favorable.
-The $\sim$8\,W penalty ($\sim$70\,kWh/year, $\sim$\euro{25}) should only be accepted when the dedicated router provides features the ISP device cannot.
+\textbf{RQ8 answer:} No. Bridge mode is not an energy-saving strategy.
+The two-device setup costs about $\sim$70\,kWh extra per year. The only reason to do it is if you genuinely need features the \ac{ISP} modem doesn't provide or security features or performance features like better WiFi coverage.

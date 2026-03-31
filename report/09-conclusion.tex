@@ -5,67 +5,29 @@
 
 \subsection{Summary of Findings}
 
-This work presented a custom-built, open-source test framework for automated power consumption measurement of consumer network devices.
-Using a DECT~200 smart plug for power metering and a Go-based load generator with a web-based analysis dashboard, we conducted five test campaigns across four consumer-grade devices (Fritzbox~7530, Huawei~EG8245W5-8T, Asus~RT-AX68U, and Alcatel~HH40V), addressing eight research questions.
+To accurately answer the research questions regarding the power consumption of home to \ac{SME} routers, a dedicated automated test framework was developed.
+Using a \ac{DECT}~200 smart plug, a custom Go-based load generator, and a web-based analysis dashboard, five tests were run across four consumer-grade devices (\verb|Fritzbox~7530|, Huawei~EG8245W5-8T, \verb|Asus~RT-AX68U|, and \verb|Alcatel~HH40V|), addressing eight research questions.
 
 Key findings:
 \begin{description}
-    \item[RQ1 (Port Count vs.\ Power):]
-    All devices show measurable power increases under load (6--16\% above idle), but the per-port increment under full traffic is small (30--175\,mW).
-    CPU-limited devices (Fritzbox) show non-monotonic power profiles due to CPU saturation.
-
-    \item[RQ2 (Per-Port PHY Cost):]
-    Connecting an idle GbE cable costs 265--302\,mW on average; Fast Ethernet costs $\sim$172\,mW.
-    The per-port idle overhead dominates over the marginal cost of actual data transmission (Test~2 showed only 4.9--7.1\% power increase from idle to full line rate).
-
-    \item[RQ3 (Power vs.\ Throughput):]
-    Power scales sub-linearly with throughput for all devices.
-    The base platform power dominates, and reducing idle power (through device selection or power-saving modes) has far greater impact than limiting throughput.
-
-    \item[RQ4 (Idle Power):]
-    Bare-minimum power varies from 1.14\,W (Alcatel) to 6.34\,W (Huawei).
-    With all subsystems idle, power ranges from 2.30\,W (Alcatel) to 7.99\,W (Asus), translating to annual costs of \euro{5}--\euro{18} at \euro{0.25}/kWh.
-
-    \item[RQ5 (WiFi Radio Cost):]
-    Idle WiFi radios are the dominant subsystem power consumer, adding 0.4--2.7\,W depending on device and number of bands.
-    WiFi power per unit throughput is 7--8$\times$ higher than wired Ethernet.
-    The Asus achieves the best WiFi energy efficiency (66\,Mbps/W at 5\,GHz near) while the Huawei is the least efficient (3.7\,Mbps/W at 2.4\,GHz near).
-    Distance effects are device- and band-dependent, not universal.
-
-    \item[RQ6 (Power-Saving Modes):]
-    The Fritzbox eco mode is the most effective, saving 474--670\,mW (7--19\%) across all subsystems, at the cost of Ethernet throughput reduction to $\sim$95\,Mbps per port.
-    Asus and Huawei TX power reduction yields minimal or inconsistent savings.
-
-    \item[RQ7 (Rated vs.\ Real Maximum):]
-    Even with all subsystems at maximum load, devices reach only 22--47\% of their rated power.
-    Manufacturer specifications include substantial headroom, likely accounting for worst-case scenarios (e.g., DSL modem active, maximum client count, sustained retransmissions).
-
-    \item[RQ8 (Bridge Mode):]
-    Splitting an ISP modem into bridge mode plus a dedicated router increases total system idle power by 85.6\% ($\sim$16.6\,W combined vs.\ $\sim$8.96\,W standalone).
-    Bridge mode is not energetically favorable for power reduction.
+    \item[RQ1:] Port count has a modest effect -- +6--16\% above idle total, with each loaded port adding just 30--175\,mW. The Fritzbox showed non-monotonic behaviour as its \ac{CPU} saturated.
+    \item[RQ2:] An idle \ac{GbE} cable costs 265--302\,mW. For the Asus and Huawei, three idle cables cost \emph{more} than running one port at full 1\,Gbps load.
+    \item[RQ3:] Power scales sub-linearly -- going from idle to line rate adds only 4.9--7.1\%. Reducing idle power has a greater impact than limiting traffic.
+    \item[RQ4:] Bare-minimum power ranges from 1.14\,W (Alcatel) to 6.34\,W (Huawei); with all subsystems idle: 2.30--7.99\,W, or \euro{5}--\euro{18}/year~\cite{bib:eurostat-electricity}.
+    \item[RQ5:] Wi-Fi radios add 0.4--2.7\,W idle and cost 7--8$\times$ more per megabit than wired Ethernet under load. Best efficiency: Asus 5\,GHz near (66\,Mbps/W); worst: Huawei (2.6--10\,Mbps/W). Distance effects are device- and band-dependent.
+    \item[RQ6:] Fritzbox eco mode saves 474--670\,mW (7--19\%) but throttles Ethernet to $\sim$100\,Mbps/port. Asus and Huawei TX power reduction modes save negligible amounts considering their overall power consumption.
+    \item[RQ7:] Even at full combined load, no device exceeded 47\% of its rated maximum. Spec sheet headroom is large.
+    \item[RQ8:] Bridge mode is not energy-efficient. The Huawei + Asus combination draws $\sim$16.6\,W -- +85.6\% vs.\ the Huawei standalone at 8.96\,W. The 8.2\,W baseline idle consumption of the Asus router significantly offsets any power savings gained from the Huawei device's reduced workload.
 \end{description}
-
-\subsection{Limitations}
-
-The results are subject to several limitations:
-\begin{itemize}
-    \item The DECT~200 smart plug has a resolution of $\sim$70\,mW and a native update interval of $\sim$2\,min (improved to $\sim$15\,s via Home Assistant polling hack), limiting precision for fine-grained per-port analysis.
-    \item All Ethernet traffic targeted the device's CPU (UDP to device IP) rather than exercising the hardware switching fabric. Real-world forwarding workloads may show different power profiles.
-    \item WiFi throughput in Test~3 was measured manually via the iperf3 app on smartphones, introducing human observation error. Test~4 provides more precise automated WiFi measurements.
-    \item The Fritzbox developed an intermittent port anomaly during Test~3 that required throughput interpolation from working ports. Power measurements were unaffected.
-    \item Tests were conducted with a single sample of each device. Manufacturing variation and firmware differences may affect reproducibility.
-    \item No zero-cable baseline was measured in Test~1 (cables were already connected during the pre-test phase), which is why Test~3 was needed to isolate the true bare-minimum power floor.
-\end{itemize}
 
 \subsection{Future Work}
 
-Possible extensions of this work include:
 \begin{itemize}
-    \item Long-term (24h+) idle power measurements to capture potential sleep-state transitions and diurnal power patterns.
-    \item Layer~2 switching load tests to measure power under realistic forwarding workloads rather than CPU-targeted traffic.
-    \item Testing additional device categories: managed switches, mesh WiFi systems, and enterprise access points.
-    \item Investigating the relationship between CPU temperature and power consumption (accessible via web interfaces on some devices).
-    \item Measuring the power impact of firmware updates and security features (firewall rules, VPN, QoS).
+    \item \textbf{Layer~2 switching tests}: Route traffic between two PCs \emph{through} the \ac{DUT} to test the switching fabric rather than the \ac{CPU}.
+    \item \textbf{Long-term idle runs}: A 24h+ measurement to check for sleep states or diurnal patterns.
+    \item \textbf{More device categories}: Managed switches, mesh systems, and enterprise APs.
+    \item \textbf{Additional load types}: ICMP, mixed TCP/UDP, real-world traffic captures.
+    \item \textbf{ISP as Gateway tests}: More combinations of routers and bridge modes, to see if the Huawei + Asus result is typical or an outlier.
 \end{itemize}
 
 %%

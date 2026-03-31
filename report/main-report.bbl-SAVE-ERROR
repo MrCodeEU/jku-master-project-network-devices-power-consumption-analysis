@@ -16,5 +16,350 @@
   {}
 \endgroup
 
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global/global}
+    \entry{bib:datasheet-alcatel-hh40v}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=2dcad2a83219dd66c1591db71456b11b}{%
+           family={{Alcatel}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{fullhash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{fullhashraw}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{bibnamehash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{authorbibnamehash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{authornamehash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{authorfullhash}{2dcad2a83219dd66c1591db71456b11b}
+      \strng{authorfullhashraw}{2dcad2a83219dd66c1591db71456b11b}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{Alcatel HH40V -- User Manual}}
+      \field{year}{2018}
+      \verb{urlraw}
+      \verb https://www.alcatelmobile.com/lb/wp-content/uploads/2019/07/180514-HH40V-UM-DE-TR069.pdf
+      \endverb
+      \verb{url}
+      \verb https://www.alcatelmobile.com/lb/wp-content/uploads/2019/07/180514-HH40V-UM-DE-TR069.pdf
+      \endverb
+    \endentry
+    \entry{bib:datasheet-asus-rtax68u}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=36a5c4d1088e7ae1b63dbb933a8bf9c3}{%
+           family={{ASUSTeK Computer Inc.}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{fullhash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{fullhashraw}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{bibnamehash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{authorbibnamehash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{authornamehash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{authorfullhash}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \strng{authorfullhashraw}{36a5c4d1088e7ae1b63dbb933a8bf9c3}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{ASUS RT-AX68U -- Technical Specifications}}
+      \field{year}{2020}
+      \verb{urlraw}
+      \verb https://www.asus.com/networking-iot-servers/wifi-routers/asus-wifi-routers/rt-ax68u/techspec/
+      \endverb
+      \verb{url}
+      \verb https://www.asus.com/networking-iot-servers/wifi-routers/asus-wifi-routers/rt-ax68u/techspec/
+      \endverb
+    \endentry
+    \entry{bib:datasheet-fritzbox7530}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=8b4fa462f5afd86d700144fa8d27e17d}{%
+           family={{AVM GmbH}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{fullhash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{fullhashraw}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{bibnamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorbibnamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authornamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorfullhash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorfullhashraw}{8b4fa462f5afd86d700144fa8d27e17d}
+      \field{extraname}{1}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{AVM FRITZ!Box 7530 -- Technical Data Sheet}}
+      \field{year}{2018}
+      \verb{urlraw}
+      \verb https://asset.conrad.com/media10/add/160267/c1/-/gl/804351123DS00/datasheet-1783471-avm-fritzbox-7530-wi-fi-modem-router-built-in-modem-adsl-vdsl-24-ghz-5-ghz-1200-mbits.pdf
+      \endverb
+      \verb{url}
+      \verb https://asset.conrad.com/media10/add/160267/c1/-/gl/804351123DS00/datasheet-1783471-avm-fritzbox-7530-wi-fi-modem-router-built-in-modem-adsl-vdsl-24-ghz-5-ghz-1200-mbits.pdf
+      \endverb
+    \endentry
+    \entry{bib:dect200}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=8b4fa462f5afd86d700144fa8d27e17d}{%
+           family={{AVM GmbH}},
+           familyi={A\bibinitperiod}}}%
+      }
+      \strng{namehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{fullhash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{fullhashraw}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{bibnamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorbibnamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authornamehash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorfullhash}{8b4fa462f5afd86d700144fa8d27e17d}
+      \strng{authorfullhashraw}{8b4fa462f5afd86d700144fa8d27e17d}
+      \field{extraname}{2}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{AVM FRITZ!DECT 200 -- Handbuch (User Manual)}}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://cdn-reichelt.de/documents/datenblatt/E910/AVM_FRITZ_DECT_200_HB_DEU.pdf
+      \endverb
+      \verb{url}
+      \verb https://cdn-reichelt.de/documents/datenblatt/E910/AVM_FRITZ_DECT_200_HB_DEU.pdf
+      \endverb
+    \endentry
+    \entry{bib:gofritz}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=1dd28b64219180ca00e51a35a18afbf8}{%
+           family={Bornemann},
+           familyi={B\bibinitperiod},
+           given={Philipp},
+           giveni={P\bibinitperiod}}}%
+      }
+      \strng{namehash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{fullhash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{fullhashraw}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{bibnamehash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{authorbibnamehash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{authornamehash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{authorfullhash}{1dd28b64219180ca00e51a35a18afbf8}
+      \strng{authorfullhashraw}{1dd28b64219180ca00e51a35a18afbf8}
+      \field{sortinit}{B}
+      \field{sortinithash}{d7095fff47cda75ca2589920aae98399}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{go-fritzbox: Go library for Fritz!Box TR-064 and UPnP}}
+      \field{year}{2023}
+      \verb{urlraw}
+      \verb https://github.com/bpicode/fritzctl
+      \endverb
+      \verb{url}
+      \verb https://github.com/bpicode/fritzctl
+      \endverb
+    \endentry
+    \entry{bib:iperf3}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=b1a72316cde3aae89d5d46d0162b1aad}{%
+           family={{ESnet / The Regents of the University of California}},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{fullhash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{fullhashraw}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{bibnamehash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{authorbibnamehash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{authornamehash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{authorfullhash}{b1a72316cde3aae89d5d46d0162b1aad}
+      \strng{authorfullhashraw}{b1a72316cde3aae89d5d46d0162b1aad}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Version 3.x}
+      \field{title}{{iPerf3 -- The ultimate speed test tool for TCP, UDP and SCTP}}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://iperf.fr/
+      \endverb
+      \verb{url}
+      \verb https://iperf.fr/
+      \endverb
+    \endentry
+    \entry{bib:eurostat-electricity}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=533195c920679b5848eb14c3f57cc69c}{%
+           family={{Eurostat}},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{fullhash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{fullhashraw}{533195c920679b5848eb14c3f57cc69c}
+      \strng{bibnamehash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{authorbibnamehash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{authornamehash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{authorfullhash}{533195c920679b5848eb14c3f57cc69c}
+      \strng{authorfullhashraw}{533195c920679b5848eb14c3f57cc69c}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{{Electricity price statistics}}
+      \field{urlday}{24}
+      \field{urlmonth}{3}
+      \field{urlyear}{2026}
+      \field{year}{2024}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://ec.europa.eu/eurostat/statistics-explained/index.php/Electricity_price_statistics
+      \endverb
+      \verb{url}
+      \verb https://ec.europa.eu/eurostat/statistics-explained/index.php/Electricity_price_statistics
+      \endverb
+    \endentry
+    \entry{bib:pgfplots}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=54e3dc3174a4975a8b3c659eae485f25}{%
+           family={Feuersänger},
+           familyi={F\bibinitperiod},
+           given={Christian},
+           giveni={C\bibinitperiod}}}%
+      }
+      \strng{namehash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{fullhash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{fullhashraw}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{bibnamehash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{authorbibnamehash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{authornamehash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{authorfullhash}{54e3dc3174a4975a8b3c659eae485f25}
+      \strng{authorfullhashraw}{54e3dc3174a4975a8b3c659eae485f25}
+      \field{sortinit}{F}
+      \field{sortinithash}{2638baaa20439f1b5a8f80c6c08a13b4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Version 1.18}
+      \field{title}{{PGFPlots: Create normal/logarithmic plots in two and three dimensions for LaTeX}}
+      \field{year}{2022}
+      \verb{urlraw}
+      \verb https://ctan.org/pkg/pgfplots
+      \endverb
+      \verb{url}
+      \verb https://ctan.org/pkg/pgfplots
+      \endverb
+    \endentry
+    \entry{ha-dect-workaround}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=8f162be64ed3f74ba52ddc109b4bfb11}{%
+           family={{Home Assistant Community}},
+           familyi={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{fullhash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{fullhashraw}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{bibnamehash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{authorbibnamehash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{authornamehash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{authorfullhash}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \strng{authorfullhashraw}{8f162be64ed3f74ba52ddc109b4bfb11}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Increase Fritz DECT polling intervall for power metering}
+      \field{urlday}{24}
+      \field{urlmonth}{3}
+      \field{urlyear}{2026}
+      \field{year}{2024}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://community.home-assistant.io/t/increase-fritz-dect-polling-intervall-for-power-metering/679737
+      \endverb
+      \verb{url}
+      \verb https://community.home-assistant.io/t/increase-fritz-dect-polling-intervall-for-power-metering/679737
+      \endverb
+    \endentry
+    \entry{bib:datasheet-huawei-eg8245}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=73357e23aeb3b109c15ae34167e15198}{%
+           family={{Huawei Technologies Co., Ltd.}},
+           familyi={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{fullhash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{fullhashraw}{73357e23aeb3b109c15ae34167e15198}
+      \strng{bibnamehash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{authorbibnamehash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{authornamehash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{authorfullhash}{73357e23aeb3b109c15ae34167e15198}
+      \strng{authorfullhashraw}{73357e23aeb3b109c15ae34167e15198}
+      \field{sortinit}{H}
+      \field{sortinithash}{23a3aa7c24e56cfa16945d55545109b5}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{Huawei EchoLife EG8245W5-8T -- Technical Specifications}}
+      \field{year}{2020}
+      \verb{urlraw}
+      \verb https://www.scribd.com/document/774390471/1593828050156465
+      \endverb
+      \verb{url}
+      \verb https://www.scribd.com/document/774390471/1593828050156465
+      \endverb
+    \endentry
+    \entry{bib:tr064}{report}{}{}
+      \list{institution}{1}{%
+        {Broadband Forum}%
+      }
+      \field{sortinit}{L}
+      \field{sortinithash}{7c47d417cecb1f4bd38d1825c427a61a}
+      \field{labeltitlesource}{title}
+      \field{number}{TR-064 Issue 2}
+      \field{title}{{LAN-Side DSL CPE Configuration}}
+      \field{type}{techreport}
+      \field{year}{2015}
+      \verb{urlraw}
+      \verb https://www.broadband-forum.org/download/TR-064.pdf
+      \endverb
+      \verb{url}
+      \verb https://www.broadband-forum.org/download/TR-064.pdf
+      \endverb
+    \endentry
+    \entry{bib:iperf3-android}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=18486728d14269ff2367eb29f9fc7aea}{%
+           family={{uncle}},
+           familyi={u\bibinitperiod}}}%
+      }
+      \strng{namehash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{fullhash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{fullhashraw}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{bibnamehash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{authorbibnamehash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{authornamehash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{authorfullhash}{18486728d14269ff2367eb29f9fc7aea}
+      \strng{authorfullhashraw}{18486728d14269ff2367eb29f9fc7aea}
+      \field{sortinit}{u}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Accessed: 2025}
+      \field{title}{{iPerf -- Network Speed Test (Android App)}}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://play.google.com/store/apps/details?id=tools.uncle.network
+      \endverb
+      \verb{url}
+      \verb https://play.google.com/store/apps/details?id=tools.uncle.network
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
 \endinput
 

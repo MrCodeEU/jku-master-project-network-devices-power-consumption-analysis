@@ -2,19 +2,21 @@
     "latex-workshop.latex.tools": [
         {
             "name": "lualatex",
-            "command": "lualatex",
+            "command": "/usr/sbin/lualatex",
             "args": [
-                "--shell-escape",
+                "-shell-escape",
                 "-synctex=1",
                 "-interaction=nonstopmode",
                 "-file-line-error",
                 "%DOC%"
             ],
-            "env": {}
+            "env": {
+                "PATH": "/usr/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/sbin:/bin"
+            }
         },
         {
             "name": "biber",
-            "command": "biber",
+            "command": "/usr/sbin/biber",
             "args": [
                 "%DOCFILE%"
             ],
